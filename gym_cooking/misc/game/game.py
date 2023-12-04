@@ -6,7 +6,7 @@ from misc.game.utils import *
 
 graphics_dir = 'misc/game/graphics'
 _image_library = {}
-
+pygame.font.init() 
 def get_image(path):
     global _image_library
     image = _image_library.get(path)
@@ -35,7 +35,9 @@ class Game:
         self.holding_size = tuple((self.holding_scale * np.asarray(self.tile_size)).astype(int))
         self.container_size = tuple((self.container_scale * np.asarray(self.tile_size)).astype(int))
         self.holding_container_size = tuple((self.container_scale * np.asarray(self.holding_size)).astype(int))
-        #self.font = pygame.font.SysFont('arialttf', 10)
+        
+        self.font = pygame.font.SysFont('arialttf.tff', 21)
+        self.health= 100
 
 
     def on_init(self):
@@ -56,6 +58,11 @@ class Game:
     def on_render(self):
         self.screen.fill(Color.FLOOR)
         objs = []
+
+        health = pygame.font.SysFont(None, 21).render(str(self.health), True, (0, 0, 0))
+        self.screen.blit(health, (0,0))
+        
+        
         
         # Draw gridsquares
         for o_list in self.world.objects.values():
@@ -76,6 +83,7 @@ class Game:
         if self.play:
             pygame.display.flip()
             pygame.display.update()
+        
 
 
     def draw_gridsquare(self, gs):
