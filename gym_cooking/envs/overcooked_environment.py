@@ -189,8 +189,8 @@ class OvercookedEnvironment(gym.Env):
         print("===============================")
         print("[environment.step] @ TIMESTEP {}".format(self.t))
         print("===============================")
-        
-        self.game.health -= 1
+        print("hello")
+        self.game.decrease_health()
 
         # Get actions.
         for sim_agent in self.sim_agents:
