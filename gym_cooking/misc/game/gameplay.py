@@ -19,6 +19,7 @@ class GamePlay(Game):
         Game.__init__(self, world, sim_agents, play=True)
         self.filename = filename
         self.save_dir = 'misc/game/screenshots'
+        self.steps = 0
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
 
@@ -36,6 +37,7 @@ class GamePlay(Game):
             self._running = False
         elif event.type == pygame.KEYDOWN:
             self.decrease_health()
+            self.steps+=1 
             # Save current image
             if event.key == pygame.K_RETURN:
                 image_name = '{}_{}.png'.format(self.filename, datetime.now().strftime('%m-%d-%y_%H-%M-%S'))
@@ -57,7 +59,11 @@ class GamePlay(Game):
                 action = KeyToTuple[event.key]
                 self.current_agent.action = action
                 interact(self.current_agent, self.world)
-
+    def done(self):
+        if self.health ==0 or self.health<0:
+            print("Terminating because you guest starved to death at "+ str(self.steps)+" steps")
+            self._running = False
+        
     def on_execute(self):
         if self.on_init() == False:
             self._running = False
@@ -65,6 +71,7 @@ class GamePlay(Game):
         while self._running:
             for event in pygame.event.get():
                 self.on_event(event)
+                self.done()
             self.on_render()
         self.on_cleanup()
 

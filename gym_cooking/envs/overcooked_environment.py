@@ -237,8 +237,22 @@ class OvercookedEnvironment(gym.Env):
                     self.arglist.max_num_timesteps)
             self.successful = False
             return True
+        
+        
 
-        # Done if subtask is completed.
+        # # Done if subtask is completed.
+        # for subtask in self.all_subtasks:
+        #     # Double check all goal_objs are at Delivery.
+        #     if isinstance(subtask, recipe.Deliver):
+        #         _, goal_obj = nav_utils.get_subtask_obj(subtask)
+
+        #         delivery_loc = list(filter(lambda o: o.name=='Delivery', self.world.get_object_list()))[0].location
+        #         goal_obj_locs = self.world.get_all_object_locs(obj=goal_obj)
+        #         if not any([gol == delivery_loc for gol in goal_obj_locs]):
+        #             self.termination_info = ""
+        #             self.successful = False
+        #             return False
+                
         for subtask in self.all_subtasks:
             # Double check all goal_objs are at Delivery.
             if isinstance(subtask, recipe.Deliver):
@@ -246,14 +260,14 @@ class OvercookedEnvironment(gym.Env):
 
                 delivery_loc = list(filter(lambda o: o.name=='Delivery', self.world.get_object_list()))[0].location
                 goal_obj_locs = self.world.get_all_object_locs(obj=goal_obj)
-                if not any([gol == delivery_loc for gol in goal_obj_locs]):
-                    self.termination_info = ""
-                    self.successful = False
-                    return False
-
-        self.termination_info = "Terminating because all deliveries were completed"
-        self.successful = True
-        return True
+                if any([gol == delivery_loc for gol in goal_obj_locs]):
+                    self.game.increase_health()
+                    self.world.remove(goal_obj)
+                    
+                    
+        # self.termination_info = "Terminating because all deliveries were completed"
+        # self.successful = True
+        # return True
 
     def reward(self):
         return 1 if self.successful else 0
