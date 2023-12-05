@@ -47,6 +47,8 @@ class OvercookedEnvironment(gym.Env):
         self.termination_info = ""
         self.successful = False
 
+        
+
     def get_repr(self):
         return self.world.get_repr() + tuple([agent.get_repr() for agent in self.sim_agents])
 
@@ -146,6 +148,7 @@ class OvercookedEnvironment(gym.Env):
         self.sim_agents = []
         self.agent_actions = {}
         self.t = 0
+        
 
         # For visualizing episode.
         self.rep = []
@@ -186,6 +189,8 @@ class OvercookedEnvironment(gym.Env):
         print("===============================")
         print("[environment.step] @ TIMESTEP {}".format(self.t))
         print("===============================")
+        print("hello")
+        self.game.decrease_health()
 
         # Get actions.
         for sim_agent in self.sim_agents:
@@ -226,6 +231,12 @@ class OvercookedEnvironment(gym.Env):
             return True
 
         assert any([isinstance(subtask, recipe.Deliver) for subtask in self.all_subtasks]), "no delivery subtask"
+
+        if self.game.health ==0 or self.game.health<0:
+            self.termination_info = "Terminating because you guest starved to death at {}".format(
+                    self.arglist.max_num_timesteps)
+            self.successful = False
+            return True
 
         # Done if subtask is completed.
         for subtask in self.all_subtasks:
