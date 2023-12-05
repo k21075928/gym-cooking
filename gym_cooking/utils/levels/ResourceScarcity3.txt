@@ -1,0 +1,21 @@
+ t-t   l-l 
+ t-t   l-l 
+ ttt   lll 
+           
+    */*    
+    /-/    
+    */*    
+           
+ ppp   ooo 
+ p-p   o-o 
+ p-p   o-o 
+
+SimpleTomato
+SimpleLettuce
+Salad
+OnionSalad
+
+0 0
+0 3
+0 5
+0 9

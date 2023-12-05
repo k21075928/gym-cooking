@@ -1,0 +1,17 @@
+-----t-
+/  -  l
+/  -  -
+*  -  -
+-  -  -
+-     p
+-----p-
+
+SimpleTomato
+SimpleLettuce
+Salad
+OnionSalad
+
+2 1
+4 1
+4 4
+2 4
