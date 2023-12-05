@@ -1,10 +1,14 @@
------t-
-/  -  l
-/  -  -
-*  -  -
--  -  -
--     p
------p-
+ t-t   l-l 
+ t-t   l-l 
+ ttt   lll 
+           
+    */*    
+    /-/    
+    */*    
+           
+ ppp   ooo 
+ p-p   o-o 
+ p-p   o-o 
 
 SimpleTomato
 SimpleLettuce
