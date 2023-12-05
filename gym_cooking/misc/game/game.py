@@ -56,9 +56,6 @@ class Game:
 
     def decrease_health(self):
         self.health = self.health - 1
-    
-    def increase_health(self):
-        self.health = self.health + 25
 
     def on_render(self):
         self.screen.fill(Color.FLOOR)
