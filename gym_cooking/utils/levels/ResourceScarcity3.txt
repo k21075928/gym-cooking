@@ -15,7 +15,7 @@ SimpleLettuce
 Salad
 OnionSalad
 
-2 1
-4 1
-4 4
-2 4
+0 0
+0 3
+0 5
+0 9
