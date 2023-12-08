@@ -76,10 +76,10 @@ The `<model name>` are the names of models described in the paper. Specifically 
 * `greedy` for Greedy.
 
 For example, running the salad recipe on the partial divider with 2 agents using Bayesian Delegation looks like:
-`python main.py --num-agents 2 --level partial-divider_salad --model1 bd --model2 bd`
+`python3 main.py --num-agents 2 --level partial-divider_salad --model1 bd --model2 bd`
 
 Or, running the tomato-lettuce recipe on the full divider with 3 agents, one using UP, one with D&C, and the third with Bayesian Delegation:
-`python main.py --num-agents 2 --level full-divider_tl --model1 up --model2 dc --model3 bd`
+`python main.py --num-agents 3 --level ResourceScarcity1 --model1 up --model2 dc --model3 bd`
 
 Although our work uses object-oriented representations for observations/states, the `OvercookedEnvironment.step` function returns *image observations* in the `info` object. They can be retrieved with `info['image_obs']`.  
 
@@ -92,7 +92,12 @@ The above commands can also be appended with the following flags:
 
 To manually control agents and explore the environment, append the `--play` flag to the above commands. Specifying the model names isn't necessary but the level and the number of agents is still required. For instance, to manually control 2 agents with the salad task on the open divider, run:
 
+`python3 main.py --num-agents 2 --level open-divider_salad --play`
 `python main.py --num-agents 2 --level open-divider_salad --play`
+`python main.py --num-agents 2 --level ResourceScarcity1 --play`
+`python main.py --num-agents 2 --level ResourceScarcity2 --play`
+`python main.py --num-agents 2 --level ResourceScarcity3 --play`
+
 
 This will open up the environment in Pygame. Only one agent can be controlled at a time -- the current active agent can be moved with the arrow keys and toggled by pressing `1`, `2`, `3`, or `4` (up until the actual number of agents of course). Hit the Enter key to save a timestamped image of the current screen to `misc/game/screenshots`.
 

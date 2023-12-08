@@ -70,6 +70,8 @@ class BayesianDelegator(Delegator):
             probs = self.add_greedy_subtasks()
         elif self.model_type == "dc":
             probs = self.add_dc_subtasks()
+        elif self.model_type == "resourceScarcity":
+            probs = self.add_resourceScarcity_subtasks
         else:
             probs = self.add_subtasks()
         return probs
@@ -401,7 +403,20 @@ class BayesianDelegator(Delegator):
             subtask_alloc = [SubtaskAllocation(subtask=p[i], subtask_agent_names=(self.all_agent_names[i],)) for i in range(len(self.all_agent_names))]
             subtask_allocs.append(subtask_alloc)
         return SubtaskAllocDistribution(subtask_allocs)
+    
+    def add_resourceScarcity_subtasks(self):
+        """Return the entire distribution of divide & conquer subtask allocations.
+        i.e. no subtask is shared between two agents.
 
+        If there are no subtasks, just make an empty distribution and return."""
+        subtask_allocs = []
+
+        subtasks = self.incomplete_subtasks + [None for _ in range(len(self.all_agent_names) - 1)]
+        for p in permutations(subtasks, len(self.all_agent_names)):
+            subtask_alloc = [SubtaskAllocation(subtask=p[i], subtask_agent_names=(self.all_agent_names[i],)) for i in range(len(self.all_agent_names))]
+            subtask_allocs.append(subtask_alloc)
+        return SubtaskAllocDistribution(subtask_allocs)
+    
     def select_subtask(self, agent_name):
         """Return subtask and subtask_agent_names for agent with agent_name
         with max. probability."""

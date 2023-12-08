@@ -6,7 +6,7 @@ from misc.game.utils import *
 
 graphics_dir = 'misc/game/graphics'
 _image_library = {}
-
+pygame.font.init() 
 def get_image(path):
     global _image_library
     image = _image_library.get(path)
@@ -35,7 +35,8 @@ class Game:
         self.holding_size = tuple((self.holding_scale * np.asarray(self.tile_size)).astype(int))
         self.container_size = tuple((self.container_scale * np.asarray(self.tile_size)).astype(int))
         self.holding_container_size = tuple((self.container_scale * np.asarray(self.holding_size)).astype(int))
-        #self.font = pygame.font.SysFont('arialttf', 10)
+        
+        self.health= 100
 
 
     def on_init(self):
@@ -46,16 +47,22 @@ class Game:
             # Create a hidden surface
             self.screen = pygame.Surface((self.width, self.height))
         self._running = True
+        self.font = pygame.font.SysFont('arialttf.tff', 21)
 
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self._running = False
 
+    def decrease_health(self):
+        self.health = self.health - 1
 
     def on_render(self):
         self.screen.fill(Color.FLOOR)
         objs = []
+
+        
+        
         
         # Draw gridsquares
         for o_list in self.world.objects.values():
@@ -77,8 +84,24 @@ class Game:
             pygame.display.flip()
             pygame.display.update()
 
+            health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
+            health_rect = health.get_rect(center=(self.width/2, self.height/2))
+
+            self.screen.blit(health, health_rect)
+
+        health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
+        health_rect = health.get_rect(center=(self.width/2, self.height/2))
+
+        self.screen.blit(health, health_rect)
+        
+
 
     def draw_gridsquare(self, gs):
+
+        health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
+
+        self.screen.blit(health, (0,0))
+
         sl = self.scaled_location(gs.location)
         fill = pygame.Rect(sl[0], sl[1], self.scale, self.scale)
 
