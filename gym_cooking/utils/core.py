@@ -24,6 +24,10 @@ class Rep:
     LETTUCE = 'l'
     ONION = 'o'
     PLATE = 'p'
+    TOMATODISPENSER = 'T'
+    LETTUCEDISPENSER = 'L'
+    ONIONDISPENSER = 'O'
+    PLATEDISPENSER = 'P'
 
 class GridSquare:
     def __init__(self, name, location):
