@@ -1,15 +1,13 @@
-tt oo
-
- //*
-
-pp ll
-
+T - /
+O - /
+P - /
+L - /
+--- *
+    -
 SimpleTomato
 SimpleLettuce
 Salad
 OnionSalad
 
-2 1
-4 1
-4 4
-2 4
+2 2
+4 2
