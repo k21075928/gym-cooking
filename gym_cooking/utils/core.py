@@ -24,11 +24,6 @@ class Rep:
     LETTUCE = 'l'
     ONION = 'o'
     PLATE = 'p'
-    TOMATODISPENSER = 'T'
-    LETTUCEDISPENSER = 'L'
-    ONIONDISPENSER = 'O'
-    PLATEDISPENSER = 'P'
-
 
 class GridSquare:
     def __init__(self, name, location):
@@ -72,6 +67,15 @@ class Floor(GridSquare):
     def __hash__(self):
         return GridSquare.__hash__(self)
 
+class Counter(GridSquare):
+    def __init__(self, location):
+        GridSquare.__init__(self,"Counter", location)
+        self.rep = Rep.COUNTER
+    def __eq__(self, other):
+        return GridSquare.__eq__(self, other)
+    def __hash__(self):
+        return GridSquare.__hash__(self)
+    
 class Counter(GridSquare):
     def __init__(self, location):
         GridSquare.__init__(self,"Counter", location)
