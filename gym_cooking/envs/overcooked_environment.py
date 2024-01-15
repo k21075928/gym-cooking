@@ -113,6 +113,15 @@ class OvercookedEnvironment(gym.Env):
                             counter.acquire(obj=obj)
                             self.world.insert(obj=counter)
                             self.world.insert(obj=obj)
+                            #DISPENSERS
+                        elif rep in 'TLOP':
+                            counter = Counter(location=(x, y))
+                            obj = Object(
+                                    location=(x, y),
+                                    contents=RepToClass[rep]())
+                            counter.acquire(obj=obj)
+                            self.world.insert(obj=counter)
+                            self.world.insert(obj=obj)
                         # GridSquare, i.e. Floor, Counter, Cutboard, Delivery.
                         elif rep in RepToClass:
                             newobj = RepToClass[rep]((x, y))
@@ -231,11 +240,11 @@ class OvercookedEnvironment(gym.Env):
 
         assert any([isinstance(subtask, recipe.Deliver) for subtask in self.all_subtasks]), "no delivery subtask"
 
-        if self.game.health ==0 or self.game.health<0:
-            self.termination_info = "Terminating because you guest starved to death at {}".format(
-                    self.arglist.max_num_timesteps)
-            self.successful = False
-            return True
+        # if self.health ==0 or self.health<0:
+        #     self.termination_info = "Terminating because you guest starved to death at {}".format(
+        #             self.arglist.max_num_timesteps)
+        #     self.successful = False
+        #     return True
 
         # Done if subtask is completed.
         for subtask in self.all_subtasks:

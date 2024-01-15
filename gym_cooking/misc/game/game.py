@@ -35,7 +35,7 @@ class Game:
         self.holding_size = tuple((self.holding_scale * np.asarray(self.tile_size)).astype(int))
         self.container_size = tuple((self.container_scale * np.asarray(self.tile_size)).astype(int))
         self.holding_container_size = tuple((self.container_scale * np.asarray(self.holding_size)).astype(int))
-        
+        self.UpdateDispenserCounter= 0
         self.health= 100
 
 
@@ -94,6 +94,16 @@ class Game:
 
         self.screen.blit(health, health_rect)
         
+    def updateDispenser(self):
+        if self.UpdateDispenserCounter%5:
+            return
+        if self.UpdateDispenserCounter%10:
+            return
+        if self.UpdateDispenserCounter%7:
+            return
+        if self.UpdateDispenserCounter%9:
+            return
+        return
 
 
     def draw_gridsquare(self, gs):
@@ -117,6 +127,34 @@ class Game:
             pygame.draw.rect(self.screen, Color.COUNTER, fill)
             pygame.draw.rect(self.screen, Color.COUNTER_BORDER, fill, 1)
             self.draw('cutboard', self.tile_size, sl)
+
+        elif isinstance(gs, TomatoDispenserCounter):
+            pygame.draw.rect(self.screen, Color.COUNTER, fill)
+            pygame.draw.rect(self.screen, Color.COUNTER_BORDER, fill, 1)
+            Counter = self.font.render("Tomatos: "+str(gs.counter), True, (0, 0, 0))
+            self.screen.blit(Counter, gs.location)
+            self.draw('TomatoDispenser', self.tile_size, sl)
+
+        elif isinstance(gs, OnionDispenserCounter):
+            pygame.draw.rect(self.screen, Color.COUNTER, fill)
+            pygame.draw.rect(self.screen, Color.COUNTER_BORDER, fill, 1)
+            Counter = self.font.render("Onions: "+str(gs.counter), True, (0, 0, 0))
+            self.screen.blit(Counter, gs.location)
+            self.draw('OnionDispenser', self.tile_size, sl)
+
+        elif isinstance(gs, LettuceDispenserCounter):
+            pygame.draw.rect(self.screen, Color.COUNTER, fill)
+            pygame.draw.rect(self.screen, Color.COUNTER_BORDER, fill, 1)
+            Counter = self.font.render("Lettuce: "+str(gs.counter), True, (0, 0, 0))
+            self.screen.blit(Counter, gs.location)
+            self.draw('LettuceDispenser', self.tile_size, sl)
+
+        elif isinstance(gs, PlateDispenserCounter):
+            pygame.draw.rect(self.screen, Color.COUNTER, fill)
+            pygame.draw.rect(self.screen, Color.COUNTER_BORDER, fill, 1)
+            Counter = self.font.render("Plates:  "+str(gs.counter), True, (0, 0, 0))
+            self.screen.blit(Counter, gs.location)
+            self.draw('PlateDispenser', self.tile_size, sl)
 
         return
 

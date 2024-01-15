@@ -3,7 +3,7 @@ O - /
 P - /
 L - /
 --- *
-    -
+
 SimpleTomato
 SimpleLettuce
 Salad

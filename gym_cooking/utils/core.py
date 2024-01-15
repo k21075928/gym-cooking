@@ -79,20 +79,13 @@ class Counter(GridSquare):
         return GridSquare.__eq__(self, other)
     def __hash__(self):
         return GridSquare.__hash__(self)
-    
-class Counter(GridSquare):
-    def __init__(self, location):
-        GridSquare.__init__(self,"Counter", location)
-        self.rep = Rep.COUNTER
-    def __eq__(self, other):
-        return GridSquare.__eq__(self, other)
-    def __hash__(self):
-        return GridSquare.__hash__(self)
+
     
 class TomatoDispenserCounter(GridSquare):
     def __init__(self, location):
         GridSquare.__init__(self,"TomatoDispenserCounter", location)
-        self.rep = Rep.COUNTER
+        self.collidable = True
+        self.rep = Rep.TOMATODISPENSER
     def __eq__(self, other):
         return GridSquare.__eq__(self, other)
     def __hash__(self):
@@ -100,7 +93,7 @@ class TomatoDispenserCounter(GridSquare):
 class OnionDispenserCounter(GridSquare):
     def __init__(self, location):
         GridSquare.__init__(self,"OnionDispenserCounter", location)
-        self.rep = Rep.COUNTER
+        self.rep = Rep.ONIONDISPENSER
     def __eq__(self, other):
         return GridSquare.__eq__(self, other)
     def __hash__(self):
@@ -108,7 +101,7 @@ class OnionDispenserCounter(GridSquare):
 class LettuceDispenserCounter(GridSquare):
     def __init__(self, location):
         GridSquare.__init__(self,"LettuceDispenserCounter", location)
-        self.rep = Rep.COUNTER
+        self.rep = Rep.LETTUCEDISPENSER
     def __eq__(self, other):
         return GridSquare.__eq__(self, other)
     def __hash__(self):
@@ -116,7 +109,7 @@ class LettuceDispenserCounter(GridSquare):
 class PlateDispenserCounter(GridSquare):
     def __init__(self, location):
         GridSquare.__init__(self,"PlateDispenserCounter", location)
-        self.rep = Rep.COUNTER
+        self.rep = Rep.PLATEDISPENSER
     def __eq__(self, other):
         return GridSquare.__eq__(self, other)
     def __hash__(self):
@@ -368,43 +361,6 @@ class Onion(Food):
     def __hash__(self):
         return Food.__hash__(self)
 
-class TomatoDispenser(Food):
-    def __init__(self, state_index = 0):
-        self.state_index = state_index   # index in food's state sequence
-        self.state_seq = FoodSequence.FRESH_CHOPPED
-        self.rep = 'T'
-        self.name = 'TomatoDispenser'
-        Food.__init__(self)
-    def __hash__(self):
-        return Food.__hash__(self)
-    def __eq__(self, other):
-        return Food.__eq__(self, other)
-    def __str__(self):
-        return Food.__str__(self)
-
-class LettuceDispenser(Food):
-    def __init__(self, state_index = 0):
-        self.state_index = state_index   # index in food's state sequence
-        self.state_seq = FoodSequence.FRESH_CHOPPED
-        self.rep = 'L'
-        self.name = 'LettuceDispenser'
-        Food.__init__(self)
-    def __eq__(self, other):
-        return Food.__eq__(self, other)
-    def __hash__(self):
-        return Food.__hash__(self)
-
-class OnionDispenser(Food):
-    def __init__(self, state_index = 0):
-        self.state_index = state_index   # index in food's state sequence
-        self.state_seq = FoodSequence.FRESH_CHOPPED
-        self.rep = 'O'
-        self.name = 'OnionDispenser'
-        Food.__init__(self)
-    def __eq__(self, other):
-        return Food.__eq__(self, other)
-    def __hash__(self):
-        return Food.__hash__(self)
 # -----------------------------------------------------------
 
 class Plate:
@@ -424,22 +380,7 @@ class Plate:
     def needs_chopped(self):
         return False
 
-class PlateDispenser:
-    def __init__(self):
-        self.rep = "P"
-        self.name = 'PlateDispenser'
-        self.full_name = 'PlateDispenser'
-        self.color = 'white'
-    def __hash__(self):
-        return hash((self.name))
-    def __str__(self):
-        return color(self.rep, self.color)
-    def __eq__(self, other):
-        return isinstance(other, Plate)
-    def __copy__(self):
-        return Plate()
-    def needs_chopped(self):
-        return False
+
 # -----------------------------------------------------------
 # PARSING
 # -----------------------------------------------------------
@@ -452,10 +393,10 @@ RepToClass = {
     Rep.LETTUCE: globals()['Lettuce'],
     Rep.ONION: globals()['Onion'],
     Rep.PLATE: globals()['Plate'],
-    Rep.TOMATODISPENSER: globals()['TomatoDispenser'],
-    Rep.LETTUCEDISPENSER: globals()['LettuceDispenser'],
-    Rep.ONIONDISPENSER: globals()['OnionDispenser'],
-    Rep.PLATEDISPENSER: globals()['PlateDispenser'],
+    Rep.TOMATODISPENSER: globals()['TomatoDispenserCounter'],
+    Rep.LETTUCEDISPENSER: globals()['LettuceDispenserCounter'],
+    Rep.ONIONDISPENSER: globals()['OnionDispenserCounter'],
+    Rep.PLATEDISPENSER: globals()['PlateDispenserCounter'],
 }
 
 
