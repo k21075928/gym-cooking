@@ -1,0 +1,11 @@
+Design choices
+initally coded for resource efficiency didnt work as already implemeneted
+coded health so theres neccessity
+2 Design choices Refresh or dispensers
+implement both but Refresh works with the inital algoirthm better
+
+Challenges:
+Code is not optiminised
+takes very long to run
+some times inifinite loop
+Need to fix Delivery box for multiple deliveries
