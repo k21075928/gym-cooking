@@ -35,6 +35,8 @@ class OvercookedEnvironment(gym.Env):
     """Environment object for Overcooked."""
 
     def __init__(self, arglist):
+        self.Initalworld = None
+        self.counter=0
         self.arglist = arglist
         self.t = 0
         self.set_filename()
@@ -113,15 +115,6 @@ class OvercookedEnvironment(gym.Env):
                             counter.acquire(obj=obj)
                             self.world.insert(obj=counter)
                             self.world.insert(obj=obj)
-                            #DISPENSERS
-                        elif rep in 'TLOP':
-                            counter = Counter(location=(x, y))
-                            obj = Object(
-                                    location=(x, y),
-                                    contents=RepToClass[rep]())
-                            counter.acquire(obj=obj)
-                            self.world.insert(obj=counter)
-                            self.world.insert(obj=obj)
                         # GridSquare, i.e. Floor, Counter, Cutboard, Delivery.
                         elif rep in RepToClass:
                             newobj = RepToClass[rep]((x, y))
@@ -153,11 +146,26 @@ class OvercookedEnvironment(gym.Env):
 
     def reset(self):
         self.world = World(arglist=self.arglist)
+        self.Initalworld = self.world
         self.recipes = []
         self.sim_agents = []
         self.agent_actions = {}
         self.t = 0
-        
+        self.counter=0
+        self.plateLocationInitial= []
+        self.tomatoLocationInitial= []
+        self.lettuceLocationInitial= []
+        self.onionLocationInitial= []
+        for obj in self.Initalworld.get_object_list():
+            if isinstance(obj, Object):
+                if obj.contains("Plate"):
+                    self.plateLocationInitial.append(obj.location)
+                if obj.contains("Tomato"):
+                    self.tomatoLocationInitial.append(obj.location)
+                if obj.contains("Lettuce"):
+                    self.lettuceLocationInitial.append(obj.location)
+                if obj.contains("Onion"):
+                    self.onionLocationInitial.append(obj.location)
 
         # For visualizing episode.
         self.rep = []
@@ -193,6 +201,7 @@ class OvercookedEnvironment(gym.Env):
         return
 
     def step(self, action_dict):
+        self.counter += 1
         # Track internal environment info.
         self.t += 1
         print("===============================")
@@ -210,6 +219,15 @@ class OvercookedEnvironment(gym.Env):
 
         # Execute.
         self.execute_navigation()
+
+        if (self.counter % 5==0):
+            self.refresh("p")
+        if (self.counter % 10==0):
+            self.refresh("p")
+        if (self.counter % 15==0):
+            self.refresh("l")
+        if (self.counter % 15==0):
+            self.refresh("o")
 
         # Visualize.
         self.display()
@@ -229,7 +247,36 @@ class OvercookedEnvironment(gym.Env):
                 "done": done, "termination_info": self.termination_info}
         return new_obs, reward, done, info
 
-
+    def refresh(self,item):             
+        if item =="t" and self.tomatoLocationInitial is not None:
+            for location in self.tomatoLocationInitial:
+                if self.world.is_occupied(location):
+                    return
+                else:
+                    obj = Object(location,contents=RepToClass["t"]())
+                    self.world.insert(obj=obj)
+        if item =="o" and  self.onionLocationInitial is not None:
+            for location in self.onionLocationInitial:
+                if self.world.is_occupied(location):
+                    return
+                else:
+                    obj = Object(location,contents=RepToClass["o"]())
+                    self.world.insert(obj=obj)
+        if item =="p" and  self.plateLocationInitial is not None:
+            for location in self.plateLocationInitial:
+                if self.world.is_occupied(location):
+                    return
+                else:
+                    obj = Object(location,contents=RepToClass["p"]())
+                    self.world.insert(obj=obj)
+        if item =="l" and  self.lettuceLocationInitial is not None:
+            for location in self.lettuceLocationInitial:
+                if self.world.is_occupied(location):
+                    return
+                else:
+                    obj = Object(location,contents=RepToClass["l"]())
+                    self.world.insert(obj=obj)
+        return
     def done(self):
         # Done if the episode maxes out
         if self.t >= self.arglist.max_num_timesteps and self.arglist.max_num_timesteps:

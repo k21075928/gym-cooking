@@ -80,7 +80,6 @@ class Counter(GridSquare):
     def __hash__(self):
         return GridSquare.__hash__(self)
 
-    
 class TomatoDispenserCounter(GridSquare):
     def __init__(self, location):
         GridSquare.__init__(self,"TomatoDispenserCounter", location)
@@ -90,6 +89,7 @@ class TomatoDispenserCounter(GridSquare):
         return GridSquare.__eq__(self, other)
     def __hash__(self):
         return GridSquare.__hash__(self)
+    
 class OnionDispenserCounter(GridSquare):
     def __init__(self, location):
         GridSquare.__init__(self,"OnionDispenserCounter", location)
@@ -98,6 +98,7 @@ class OnionDispenserCounter(GridSquare):
         return GridSquare.__eq__(self, other)
     def __hash__(self):
         return GridSquare.__hash__(self)
+    
 class LettuceDispenserCounter(GridSquare):
     def __init__(self, location):
         GridSquare.__init__(self,"LettuceDispenserCounter", location)
@@ -106,6 +107,7 @@ class LettuceDispenserCounter(GridSquare):
         return GridSquare.__eq__(self, other)
     def __hash__(self):
         return GridSquare.__hash__(self)
+    
 class PlateDispenserCounter(GridSquare):
     def __init__(self, location):
         GridSquare.__init__(self,"PlateDispenserCounter", location)
@@ -396,7 +398,7 @@ RepToClass = {
     Rep.TOMATODISPENSER: globals()['TomatoDispenserCounter'],
     Rep.LETTUCEDISPENSER: globals()['LettuceDispenserCounter'],
     Rep.ONIONDISPENSER: globals()['OnionDispenserCounter'],
-    Rep.PLATEDISPENSER: globals()['PlateDispenserCounter'],
+    Rep.PLATEDISPENSER: globals()['PlateDispenserCounter']
 }
 
 
