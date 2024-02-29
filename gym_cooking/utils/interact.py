@@ -52,11 +52,15 @@ def interact(agent, world):
             if isinstance(gs, Cutboard) and obj.needs_chopped() and not world.arglist.play:
                 # normally chop, but if in playable game mode then put down first
                 obj.chop()
+            elif isinstance(gs, Stove) and obj.needs_chopped() and not world.arglist.play:
+                # Cook
+                obj.chop()
             else:
                 gs.acquire(obj) # obj is put onto gridsquare
                 agent.release()
                 assert world.get_object_at(gs.location, obj, find_held_objects =\
                     False).is_held == False, "Verifying put down works"
+        
 
     # if not holding anything
     elif agent.holding is None:
@@ -65,6 +69,8 @@ def interact(agent, world):
             obj = world.get_object_at(gs.location, None, find_held_objects = False)
             # if in playable game mode, then chop raw items on cutting board
             if isinstance(gs, Cutboard) and obj.needs_chopped() and world.arglist.play:
+                obj.chop()
+            if isinstance(gs, Stove) and obj.needs_chopped() and world.arglist.play:
                 obj.chop()
             else:
                 gs.release()

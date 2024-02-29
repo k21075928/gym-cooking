@@ -134,6 +134,16 @@ class Chop(Action):
 
         Action.__init__(self, 'Chop', pre, post_add)
 
+class Chop(Action):
+    def __init__(self, obj, pre=None, post_add=None):
+        self.args = (obj,)
+
+        self.pre_default = [Fresh(obj)]
+        self.post_add_default = [Cooked(obj)]
+
+        Action.__init__(self, 'Cook', pre, post_add)
+
+
 '''
 Merge(X, Y)
 Pre: SomeState(X), SomeState(Y)

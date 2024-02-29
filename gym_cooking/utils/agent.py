@@ -11,7 +11,7 @@ from navigation_planner.planners.e2e_brtdp import E2E_BRTDP
 import navigation_planner.utils as nav_utils
 
 # Other core modules
-from utils.core import Counter, Cutboard
+from utils.core import Counter, Cutboard, Stove
 from utils.utils import agent_settings
 
 import numpy as np

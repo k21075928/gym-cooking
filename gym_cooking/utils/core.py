@@ -19,8 +19,10 @@ class Rep:
     FLOOR = ' '
     COUNTER = '-'
     CUTBOARD = '/'
+    STOVE = "s"
     DELIVERY = '*'
     TOMATO = 't'
+    CHICKEN = 'c'
     LETTUCE = 'l'
     ONION = 'o'
     PLATE = 'p'
@@ -139,6 +141,16 @@ class Cutboard(GridSquare):
     def __hash__(self):
         return GridSquare.__hash__(self)
 
+class Stove(GridSquare):
+    def __init__(self, location):
+        GridSquare.__init__(self, "Stove", location)
+        self.rep = Rep.STOVE
+        self.collidable = True
+    def __eq__(self, other):
+        return GridSquare.__eq__(self, other)
+    def __hash__(self):
+        return GridSquare.__hash__(self)
+
 class Delivery(GridSquare):
     def __init__(self, location):
         GridSquare.__init__(self, "Delivery", location)
@@ -207,10 +219,20 @@ class Object:
     def needs_chopped(self):
         if len(self.contents) > 1: return False
         return self.contents[0].needs_chopped()
+    
+    def needs_cooked(self):
+        if len(self.contents) > 1: return False
+        return self.contents[0].needs_cooked()
 
     def is_chopped(self):
         for c in self.contents:
             if isinstance(c, Plate) or c.get_state() != 'Chopped':
+                return False
+        return True
+
+    def is_cooked(self):
+        for c in self.contents:
+            if isinstance(c, Plate) or c.get_state() != 'Cooked':
                 return False
         return True
 
@@ -219,6 +241,13 @@ class Object:
         assert self.needs_chopped()
         self.contents[0].update_state()
         assert not (self.needs_chopped())
+        self.update_names()
+    
+    def cook(self):
+        assert len(self.contents) == 1
+        assert self.needs_cooked()
+        self.contents[0].update_state()
+        assert not (self.needs_cooked())
         self.update_names()
 
     def merge(self, obj):
@@ -274,10 +303,12 @@ def mergeable(obj1, obj2):
 class FoodState:
     FRESH = globals()['recipe'].__dict__['Fresh']
     CHOPPED = globals()['recipe'].__dict__['Chopped']
+    COOKED = globals()['recipe'].__dict__['Cooked']
 
 class FoodSequence:
     FRESH = [FoodState.FRESH]
     FRESH_CHOPPED = [FoodState.FRESH, FoodState.CHOPPED]
+    FRESH_COOKED = [FoodState.FRESH, FoodState.COOKED]
 
 class Food:
     def __init__(self):
@@ -312,6 +343,8 @@ class Food:
 
     def needs_chopped(self):
         return self.state_seq[(self.state_index+1)%len(self.state_seq)] == FoodState.CHOPPED
+    def needs_cooked(self):
+        return self.state_seq[(self.state_index+1)%len(self.state_seq)] == FoodState.COOKED
 
     def done(self):
         return (self.state_index % len(self.state_seq)) == len(self.state_seq) - 1
@@ -331,6 +364,20 @@ class Tomato(Food):
         self.state_seq = FoodSequence.FRESH_CHOPPED
         self.rep = 't'
         self.name = 'Tomato'
+        Food.__init__(self)
+    def __hash__(self):
+        return Food.__hash__(self)
+    def __eq__(self, other):
+        return Food.__eq__(self, other)
+    def __str__(self):
+        return Food.__str__(self)
+
+class Chicken(Food):
+    def __init__(self, state_index = 0):
+        self.state_index = state_index   # index in food's state sequence
+        self.state_seq = FoodSequence.FRESH_COOKED
+        self.rep = 'c'
+        self.name = 'Chicken'
         Food.__init__(self)
     def __hash__(self):
         return Food.__hash__(self)
@@ -382,6 +429,22 @@ class Plate:
     def needs_chopped(self):
         return False
 
+class Grill:
+    def __init__(self):
+        self.rep = "g"
+        self.name = 'Grill'
+        self.full_name = 'Grill'
+        self.color = 'grey'
+    def __hash__(self):
+        return hash((self.name))
+    def __str__(self):
+        return color(self.rep, self.color)
+    def __eq__(self, other):
+        return isinstance(other, Grill)
+    def __copy__(self):
+        return Grill()
+    def needs_chopped(self):
+        return False
 
 # -----------------------------------------------------------
 # PARSING
@@ -390,15 +453,13 @@ RepToClass = {
     Rep.FLOOR: globals()['Floor'],
     Rep.COUNTER: globals()['Counter'],
     Rep.CUTBOARD: globals()['Cutboard'],
+    Rep.STOVE: globals()['Stove'],
     Rep.DELIVERY: globals()['Delivery'],
     Rep.TOMATO: globals()['Tomato'],
+    Rep.CHICKEN: globals()['Chicken'],
     Rep.LETTUCE: globals()['Lettuce'],
     Rep.ONION: globals()['Onion'],
-    Rep.PLATE: globals()['Plate'],
-    Rep.TOMATODISPENSER: globals()['TomatoDispenserCounter'],
-    Rep.LETTUCEDISPENSER: globals()['LettuceDispenserCounter'],
-    Rep.ONIONDISPENSER: globals()['OnionDispenserCounter'],
-    Rep.PLATEDISPENSER: globals()['PlateDispenserCounter']
+    Rep.PLATE: globals()['Plate']
 }
 
 

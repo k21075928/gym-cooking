@@ -65,10 +65,26 @@ class Recipe:
                             [recipe.Merged(plate_str), recipe.Merged(rem_str)], None))
                         self.actions.add(recipe.Merge(item, rem_plate_str))
 
-class SimpleTomato(Recipe):
+class SimpleTomato(Recipe): #chicken needs to be done
     def __init__(self):
         Recipe.__init__(self, 'Tomato')
         self.add_ingredient(Tomato(state_index=-1))
+        self.add_goal()
+        self.add_merge_actions()
+
+class SimpleChicken(Recipe): 
+    def __init__(self):
+        Recipe.__init__(self, 'Chicken')
+        self.add_ingredient(Chicken(state_index=-2))
+        self.add_goal()
+        self.add_merge_actions()
+
+class ChickenSalad(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'ChickenSalad')
+        self.add_ingredient(Tomato(state_index=-1))
+        self.add_ingredient(Lettuce(state_index=-1))
+        self.add_ingredient(Chicken(state_index=-1))
         self.add_goal()
         self.add_merge_actions()
 

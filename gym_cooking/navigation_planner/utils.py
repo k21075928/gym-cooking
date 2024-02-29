@@ -8,10 +8,12 @@ from queue import PriorityQueue
 
 StringToGridSquare = {
         "Tomato"   : Counter,
+        "Chicken"  : Counter,
         "Lettuce"  : Counter,
         "Onion"    : Counter,
         "Plate"    : Counter,
         "Cutboard" : Cutboard,
+        "Stove" : Stove,
         "Delivery" : Delivery,
         }
 
@@ -19,6 +21,7 @@ StringToObject = {
         "Tomato"  : Tomato,
         "Lettuce" : Lettuce,
         "Onion"   : Onion,
+        "Chicken"   : Onion,
         }
 
 

@@ -24,6 +24,7 @@ class GamePlay(Game):
             os.makedirs(self.save_dir)
         self.plateLocationInitial= []
         self.tomatoLocationInitial= []
+        self.chickenLocationInitial= []
         self.lettuceLocationInitial= []
         self.onionLocationInitial= []
         self.deliveryLocation= []
@@ -37,6 +38,8 @@ class GamePlay(Game):
                     self.plateLocationInitial.append(obj.location)
                 if obj.contains("Tomato"):
                     self.tomatoLocationInitial.append(obj.location)
+                if obj.contains("Chicken"):
+                    self.chickenLocationInitial.append(obj.location)
                 if obj.contains("Lettuce"):
                     self.lettuceLocationInitial.append(obj.location)
                 if obj.contains("Onion"):
@@ -78,6 +81,13 @@ class GamePlay(Game):
                     return
                 else:
                     obj = Object(location,contents=RepToClass["l"]())
+                    self.world.insert(obj=obj)
+        if item =="c" and  self.chickenLocationInitial is not None:
+            for location in self.chickenLocationInitial:
+                if self.world.is_occupied(location):
+                    return
+                else:
+                    obj = Object(location,contents=RepToClass["c"]())
                     self.world.insert(obj=obj)
         return
 
