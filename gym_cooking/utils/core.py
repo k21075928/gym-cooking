@@ -233,6 +233,23 @@ class Object:
         assert not (self.needs_chopped())
         self.update_names()
 
+    def needs_cooked(self):
+        if len(self.contents) > 1: return False
+        return self.contents[0].needs_cooked()
+
+    def is_cooked(self):
+        for c in self.contents:
+            if isinstance(c, Plate) or c.get_state() != 'Cooked':
+                return False
+        return True
+
+    def chop(self):
+        assert len(self.contents) == 1
+        assert self.needs_cooked()
+        self.contents[0].update_state()
+        assert not (self.needs_cooked())
+        self.update_names()
+
     def merge(self, obj):
         if isinstance(obj, Object):
             # move obj's contents into this instance
