@@ -19,8 +19,10 @@ class Rep:
     FLOOR = ' '
     COUNTER = '-'
     CUTBOARD = '/'
+    STOVE = "s"
     DELIVERY = '*'
     TOMATO = 't'
+    CHICKEN = 'c'
     LETTUCE = 'l'
     ONION = 'o'
     PLATE = 'p'
@@ -138,7 +140,17 @@ class Cutboard(GridSquare):
         return GridSquare.__eq__(self, other)
     def __hash__(self):
         return GridSquare.__hash__(self)
-
+    
+class Stove(GridSquare):
+    def __init__(self, location):
+        GridSquare.__init__(self, "Stove", location)
+        self.rep = Rep.STOVE
+        self.collidable = True
+    def __eq__(self, other):
+        return GridSquare.__eq__(self, other)
+    def __hash__(self):
+        return GridSquare.__hash__(self)
+    
 class Delivery(GridSquare):
     def __init__(self, location):
         GridSquare.__init__(self, "Delivery", location)
@@ -338,6 +350,20 @@ class Tomato(Food):
         return Food.__eq__(self, other)
     def __str__(self):
         return Food.__str__(self)
+    
+class Chicken(Food):
+    def __init__(self, state_index = 0):
+        self.state_index = state_index   # index in food's state sequence
+        self.state_seq = FoodSequence.FRESH_CHOPPED
+        self.rep = 'c'
+        self.name = 'Chicken'
+        Food.__init__(self)
+    def __hash__(self):
+        return Food.__hash__(self)
+    def __eq__(self, other):
+        return Food.__eq__(self, other)
+    def __str__(self):
+        return Food.__str__(self)
 
 class Lettuce(Food):
     def __init__(self, state_index = 0):
@@ -390,8 +416,10 @@ RepToClass = {
     Rep.FLOOR: globals()['Floor'],
     Rep.COUNTER: globals()['Counter'],
     Rep.CUTBOARD: globals()['Cutboard'],
+    Rep.STOVE: globals()['Stove'],
     Rep.DELIVERY: globals()['Delivery'],
     Rep.TOMATO: globals()['Tomato'],
+    Rep.CHICKEN: globals()['Chicken'],
     Rep.LETTUCE: globals()['Lettuce'],
     Rep.ONION: globals()['Onion'],
     Rep.PLATE: globals()['Plate'],

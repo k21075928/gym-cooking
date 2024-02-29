@@ -106,8 +106,8 @@ class OvercookedEnvironment(gym.Env):
                 # Phase 1: Read in kitchen map.
                 elif phase == 1:
                     for x, rep in enumerate(line):
-                        # Object, i.e. Tomato, Lettuce, Onion, or Plate.
-                        if rep in 'tlop':
+                        # Object, i.e. Tomato, Lettuce, Onion, or Plate, chicken.
+                        if rep in 'tlopc':
                             counter = Counter(location=(x, y))
                             obj = Object(
                                     location=(x, y),
@@ -156,6 +156,7 @@ class OvercookedEnvironment(gym.Env):
         self.tomatoLocationInitial= []
         self.lettuceLocationInitial= []
         self.onionLocationInitial= []
+        self.chickenLocationInitial= []
         for obj in self.Initalworld.get_object_list():
             if isinstance(obj, Object):
                 if obj.contains("Plate"):
@@ -166,6 +167,8 @@ class OvercookedEnvironment(gym.Env):
                     self.lettuceLocationInitial.append(obj.location)
                 if obj.contains("Onion"):
                     self.onionLocationInitial.append(obj.location)
+                if obj.contains("Chicken"):
+                    self.chickenLocationInitial.append(obj.location)
 
         # For visualizing episode.
         self.rep = []
@@ -275,6 +278,13 @@ class OvercookedEnvironment(gym.Env):
                     return
                 else:
                     obj = Object(location,contents=RepToClass["l"]())
+                    self.world.insert(obj=obj)
+        if item =="c" and  self.chickenLocationInitial is not None:
+            for location in self.chickenLocationInitial:
+                if self.world.is_occupied(location):
+                    return
+                else:
+                    obj = Object(location,contents=RepToClass["c"]())
                     self.world.insert(obj=obj)
         return
     def done(self):
