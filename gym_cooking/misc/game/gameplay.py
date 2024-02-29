@@ -105,6 +105,8 @@ class GamePlay(Game):
                 self.refresh("l")
             if (self.steps % 30==0):
                 self.refresh("o")
+            if (self.steps % 50==0):
+                self.refresh("c")
             # Save current image
             if event.key == pygame.K_RETURN:
                 image_name = '{}_{}.png'.format(self.filename, datetime.now().strftime('%m-%d-%y_%H-%M-%S'))
@@ -137,7 +139,11 @@ class GamePlay(Game):
             self._running = False
     def isdelivered(self,obj):
         score = obj.full_name.count("-")
-        self.increase_health(20*score)
+        meat = obj.full_name.count("Chicken")
+        if meat>0:
+            self.increase_health(100)
+        else:
+            self.increase_health(20*score)
         self.world.remove(obj)
              
 

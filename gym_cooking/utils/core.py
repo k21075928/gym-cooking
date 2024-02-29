@@ -243,7 +243,7 @@ class Object:
                 return False
         return True
 
-    def chop(self):
+    def cook(self):
         assert len(self.contents) == 1
         assert self.needs_cooked()
         self.contents[0].update_state()
@@ -303,10 +303,12 @@ def mergeable(obj1, obj2):
 class FoodState:
     FRESH = globals()['recipe'].__dict__['Fresh']
     CHOPPED = globals()['recipe'].__dict__['Chopped']
+    COOKED = globals()['recipe'].__dict__['Cooked']
 
 class FoodSequence:
     FRESH = [FoodState.FRESH]
     FRESH_CHOPPED = [FoodState.FRESH, FoodState.CHOPPED]
+    FRESH_COOKED = [FoodState.FRESH, FoodState.COOKED]
 
 class Food:
     def __init__(self):
@@ -341,6 +343,9 @@ class Food:
 
     def needs_chopped(self):
         return self.state_seq[(self.state_index+1)%len(self.state_seq)] == FoodState.CHOPPED
+    
+    def needs_cooked(self):
+        return self.state_seq[(self.state_index+1)%len(self.state_seq)] == FoodState.COOKED
 
     def done(self):
         return (self.state_index % len(self.state_seq)) == len(self.state_seq) - 1
@@ -367,11 +372,13 @@ class Tomato(Food):
         return Food.__eq__(self, other)
     def __str__(self):
         return Food.__str__(self)
+    def needs_cooked(self):
+        return False
     
 class Chicken(Food):
     def __init__(self, state_index = 0):
         self.state_index = state_index   # index in food's state sequence
-        self.state_seq = FoodSequence.FRESH_CHOPPED
+        self.state_seq = FoodSequence.FRESH_COOKED
         self.rep = 'c'
         self.name = 'Chicken'
         Food.__init__(self)
@@ -381,6 +388,8 @@ class Chicken(Food):
         return Food.__eq__(self, other)
     def __str__(self):
         return Food.__str__(self)
+    def needs_chopped(self):
+        return False
 
 class Lettuce(Food):
     def __init__(self, state_index = 0):
@@ -393,6 +402,8 @@ class Lettuce(Food):
         return Food.__eq__(self, other)
     def __hash__(self):
         return Food.__hash__(self)
+    def needs_cooked(self):
+        return False
 
 class Onion(Food):
     def __init__(self, state_index = 0):
@@ -405,6 +416,8 @@ class Onion(Food):
         return Food.__eq__(self, other)
     def __hash__(self):
         return Food.__hash__(self)
+    def needs_cooked(self):
+        return False
 
 # -----------------------------------------------------------
 
