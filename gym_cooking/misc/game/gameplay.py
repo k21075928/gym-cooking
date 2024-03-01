@@ -141,7 +141,7 @@ class GamePlay(Game):
         score = obj.full_name.count("-")
         meat = obj.full_name.count("Chicken")
         if meat>0:
-            self.increase_health(100)
+            self.increase_health(20*score+50)
         else:
             self.increase_health(20*score)
         self.world.remove(obj)
