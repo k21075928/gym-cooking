@@ -26,6 +26,7 @@ def interact(agent, world):
             if obj.is_deliverable():
                 gs.acquire(obj)
                 agent.release()
+                world.remove(obj)
                 print('\nDelivered {}!'.format(obj.full_name))
                 return obj
 
@@ -53,7 +54,7 @@ def interact(agent, world):
                 # normally chop, but if in playable game mode then put down first
                 obj.chop()
             if isinstance(gs, Stove) and obj.needs_cooked() and not world.arglist.play:
-                # normally chop, but if in playable game mode then put down first
+                # normally cook, but if in playable game mode then put down first
                 obj.cook()
             else:
                 gs.acquire(obj) # obj is put onto gridsquare

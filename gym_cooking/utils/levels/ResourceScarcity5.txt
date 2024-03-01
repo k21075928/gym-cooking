@@ -4,9 +4,6 @@ p - /
 l - /
 -c- *
 
-SimpleTomato
-SimpleLettuce
-Salad
 OnionSalad
 
 1 2

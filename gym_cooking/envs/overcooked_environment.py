@@ -157,18 +157,6 @@ class OvercookedEnvironment(gym.Env):
         self.lettuceLocationInitial= []
         self.onionLocationInitial= []
         self.chickenLocationInitial= []
-        for obj in self.Initalworld.get_object_list():
-            if isinstance(obj, Object):
-                if obj.contains("Plate"):
-                    self.plateLocationInitial.append(obj.location)
-                if obj.contains("Tomato"):
-                    self.tomatoLocationInitial.append(obj.location)
-                if obj.contains("Lettuce"):
-                    self.lettuceLocationInitial.append(obj.location)
-                if obj.contains("Onion"):
-                    self.onionLocationInitial.append(obj.location)
-                if obj.contains("Chicken"):
-                    self.chickenLocationInitial.append(obj.location)
 
         # For visualizing episode.
         self.rep = []
@@ -202,9 +190,27 @@ class OvercookedEnvironment(gym.Env):
 
     def close(self):
         return
+    
+    def objInit(self):
+        for obj in self.Initalworld.get_object_list():
+            if isinstance(obj, Object):
+                if obj.contains("Plate"):
+                    self.plateLocationInitial.append(obj.location)
+                    print("PLATE INITALIse")
+                if obj.contains("Tomato"):
+                    self.tomatoLocationInitial.append(obj.location)
+                if obj.contains("Lettuce"):
+                    self.lettuceLocationInitial.append(obj.location)
+                if obj.contains("Onion"):
+                    self.onionLocationInitial.append(obj.location)
+                if obj.contains("Chicken"):
+                    self.chickenLocationInitial.append(obj.location)
 
     def step(self, action_dict):
+        if self.counter==0:
+            self.objInit()
         self.counter += 1
+
         # Track internal environment info.
         self.t += 1
         print("===============================")
@@ -223,14 +229,16 @@ class OvercookedEnvironment(gym.Env):
         # Execute.
         self.execute_navigation()
 
-        if (self.counter % 5==0):
-            self.refresh("p")
+        if (self.counter % 10==0):
+            self.refresh("t")
         if (self.counter % 10==0):
             self.refresh("p")
         if (self.counter % 15==0):
             self.refresh("l")
         if (self.counter % 15==0):
             self.refresh("o")
+        if (self.counter % 15==0):
+            self.refresh("c")
 
         # Visualize.
         self.display()
@@ -251,6 +259,7 @@ class OvercookedEnvironment(gym.Env):
         return new_obs, reward, done, info
 
     def refresh(self,item):             
+        print("Test Refresh")
         if item =="t" and self.tomatoLocationInitial is not None:
             for location in self.tomatoLocationInitial:
                 if self.world.is_occupied(location):
@@ -289,19 +298,19 @@ class OvercookedEnvironment(gym.Env):
         return
     def done(self):
         # Done if the episode maxes out
-        if self.t >= self.arglist.max_num_timesteps and self.arglist.max_num_timesteps:
-            self.termination_info = "Terminating because passed {} timesteps".format(
-                    self.arglist.max_num_timesteps)
-            self.successful = False
-            return True
-
-        assert any([isinstance(subtask, recipe.Deliver) for subtask in self.all_subtasks]), "no delivery subtask"
-
-        # if self.health ==0 or self.health<0:
-        #     self.termination_info = "Terminating because you guest starved to death at {}".format(
+        # if self.t >= self.arglist.max_num_timesteps and self.arglist.max_num_timesteps:
+        #     self.termination_info = "Terminating because passed {} timesteps".format(
         #             self.arglist.max_num_timesteps)
         #     self.successful = False
         #     return True
+
+        assert any([isinstance(subtask, recipe.Deliver) for subtask in self.all_subtasks]), "no delivery subtask"
+
+        if self.game.health ==0 or self.game.health<0:
+            self.termination_info = "Terminating because you guest starved to death at {}".format(
+                    self.arglist.max_num_timesteps)
+            self.successful = False
+            return True
 
         # Done if subtask is completed.
         for subtask in self.all_subtasks:

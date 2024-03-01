@@ -1,8 +1,12 @@
 Design choices
-initally coded for resource efficiency didnt work as already implemeneted
+initally coded for resource efficiency didnt work as already implemeneted a
 coded health so theres neccessity
 2 Design choices Refresh or dispensers
 implement both but Refresh works with the inital algoirthm better
+
+increasing complexity 
+created new ingredient Chicken which needs to be cooked first can be used to create a chicken salad 
+
 
 Challenges:
 Code is not optiminised
