@@ -22,6 +22,10 @@ class Recipe:
             self.actions.add(recipe.Chop(item.name))
             self.actions.add(recipe.Merge(item.name, 'Plate',\
                 [item.state_seq[-1](item.name), recipe.Fresh('Plate')], None))
+        if item.state_seq == FoodSequence.FRESH_COOKED:
+            self.actions.add(recipe.Cook(item.name))
+            self.actions.add(recipe.Merge(item.name, 'Plate',\
+                [item.state_seq[-1](item.name), recipe.Fresh('Plate')], None))
 
     def add_goal(self):
         self.contents = sorted(self.contents, key = lambda x: x.name)   # list of Food objects
@@ -84,6 +88,15 @@ class Salad(Recipe):
         Recipe.__init__(self, 'Salad')
         self.add_ingredient(Tomato(state_index=-1))
         self.add_ingredient(Lettuce(state_index=-1))
+        self.add_goal()
+        self.add_merge_actions()
+
+class ChickenSalad(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'ChickenSalad')
+        self.add_ingredient(Tomato(state_index=-1))
+        self.add_ingredient(Lettuce(state_index=-1))
+        self.add_ingredient(Chicken(state_index=-1))
         self.add_goal()
         self.add_merge_actions()
 
