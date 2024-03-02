@@ -196,7 +196,6 @@ class OvercookedEnvironment(gym.Env):
             if isinstance(obj, Object):
                 if obj.contains("Plate"):
                     self.plateLocationInitial.append(obj.location)
-                    print("PLATE INITALIse")
                 if obj.contains("Tomato"):
                     self.tomatoLocationInitial.append(obj.location)
                 if obj.contains("Lettuce"):
@@ -206,14 +205,7 @@ class OvercookedEnvironment(gym.Env):
                 if obj.contains("Chicken"):
                     self.chickenLocationInitial.append(obj.location)
 
-    def isdelivered(self,obj):
-        score = obj.full_name.count("-")
-        meat = obj.full_name.count("Chicken")
-        if meat>0:
-            self.increase_health(20*score+50)
-        else:
-            self.increase_health(20*score)
-        self.world.remove(obj)
+
         
     def step(self, action_dict):
         # if self.counter==0:
@@ -330,13 +322,15 @@ class OvercookedEnvironment(gym.Env):
                 delivery_loc = list(filter(lambda o: o.name=='Delivery', self.world.get_object_list()))[0].location
                 goal_obj_locs = self.world.get_all_object_locs(obj=goal_obj)
                 if not any([gol == delivery_loc for gol in goal_obj_locs]):
-                    self.termination_info = ""
-                    self.successful = False
-                    return False
+                    print("Completed Recipe onto the next :)")
+                    self.termination_info = "1 recipe completed"
+                    self.successful = True
 
-        self.termination_info = "Terminating because all deliveries were completed"
-        self.successful = True
-        return True
+        self.all_subtasks = self.run_recipes()
+        if(self.all_subtasks is None):
+            self.termination_info = "No Recipes can be completed"
+            self.successful = True
+            return True
 
     def reward(self):
         return 1 if self.successful else 0
@@ -524,9 +518,21 @@ class OvercookedEnvironment(gym.Env):
 
     def execute_navigation(self):
         for agent in self.sim_agents:
-            interact(agent=agent, world=self.world)
+            objD =None
+            objD=interact(agent=agent, world=self.world)
             self.agent_actions[agent.name] = agent.action
+            if objD is not None:
+                    self.isdelivered(objD)
+                    objD = None
 
+    def isdelivered(self,obj):
+        score = obj.full_name.count("-")
+        meat = obj.full_name.count("Chicken")
+        if meat>0:
+            self.game.increase_health(20*score+50)
+        else:
+            self.game.increase_health(20*score)
+        self.world.remove(obj)
 
     def cache_distances(self):
         """Saving distances between world objects."""
