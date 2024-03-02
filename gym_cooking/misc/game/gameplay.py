@@ -144,6 +144,7 @@ class GamePlay(Game):
             self.increase_health(20*score+50)
         else:
             self.increase_health(20*score)
+        self.world.remove(obj)
         
              
 

@@ -26,7 +26,6 @@ def interact(agent, world):
             if obj.is_deliverable():
                 gs.acquire(obj)
                 agent.release()
-                world.remove(obj)
                 print('\nDelivered {}!'.format(obj.full_name))
                 return obj
 

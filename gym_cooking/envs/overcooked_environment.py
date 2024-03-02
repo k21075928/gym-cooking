@@ -206,9 +206,18 @@ class OvercookedEnvironment(gym.Env):
                 if obj.contains("Chicken"):
                     self.chickenLocationInitial.append(obj.location)
 
+    def isdelivered(self,obj):
+        score = obj.full_name.count("-")
+        meat = obj.full_name.count("Chicken")
+        if meat>0:
+            self.increase_health(20*score+50)
+        else:
+            self.increase_health(20*score)
+        self.world.remove(obj)
+        
     def step(self, action_dict):
-        if self.counter==0:
-            self.objInit()
+        # if self.counter==0:
+        #     self.objInit()
         self.counter += 1
 
         # Track internal environment info.
