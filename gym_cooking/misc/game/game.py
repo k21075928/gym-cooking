@@ -98,16 +98,6 @@ class Game:
 
         self.screen.blit(health, health_rect)
         
-    def updateDispenser(self):
-        if self.UpdateDispenserCounter%5:
-            return
-        if self.UpdateDispenserCounter%10:
-            return
-        if self.UpdateDispenserCounter%7:
-            return
-        if self.UpdateDispenserCounter%9:
-            return
-        return
 
 
     def draw_gridsquare(self, gs):

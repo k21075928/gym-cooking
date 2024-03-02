@@ -1,7 +1,7 @@
-t t /
-o o s
-p p /
-l l /
+t - /
+o - s
+p - /
+l - /
 -c- *
 
 OnionSalad

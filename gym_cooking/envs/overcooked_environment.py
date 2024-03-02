@@ -259,8 +259,7 @@ class OvercookedEnvironment(gym.Env):
                 "done": done, "termination_info": self.termination_info}
         return new_obs, reward, done, info
 
-    def refresh(self,item):             
-        print("Test Refresh")
+    def refresh(self,item):
         if item =="t" and self.tomatoLocationInitial is not None:
             for location in self.tomatoLocationInitial:
                 if self.world.is_occupied(location):
