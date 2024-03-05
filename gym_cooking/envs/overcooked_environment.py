@@ -208,8 +208,8 @@ class OvercookedEnvironment(gym.Env):
 
         
     def step(self, action_dict):
-        # if self.counter==0:
-        #     self.objInit()
+        if self.counter==0:
+            self.objInit()
         self.counter += 1
 
         # Track internal environment info.
@@ -370,6 +370,14 @@ class OvercookedEnvironment(gym.Env):
         # For Merge operator on Chop subtasks, we look at objects that can be
         # chopped and the cutting board objects.
         if isinstance(subtask, recipe.Chop):
+            # A: Object that can be chopped.
+            A_locs = self.world.get_object_locs(obj=start_obj, is_held=False) + list(map(lambda a: a.location,\
+                list(filter(lambda a: a.name in subtask_agent_names and a.holding == start_obj, self.sim_agents))))
+
+            # B: Cutboard objects.
+            B_locs = self.world.get_all_object_locs(obj=subtask_action_obj)
+        
+        elif isinstance(subtask, recipe.Cook):
             # A: Object that can be chopped.
             A_locs = self.world.get_object_locs(obj=start_obj, is_held=False) + list(map(lambda a: a.location,\
                 list(filter(lambda a: a.name in subtask_agent_names and a.holding == start_obj, self.sim_agents))))

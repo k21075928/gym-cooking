@@ -59,10 +59,16 @@ class Recipe:
 
                     # can merge item with remaining
                     if len(rem) == 1:
-                        self.actions.add(recipe.Merge(item, rem_str,\
-                            [recipe.Chopped(item), recipe.Chopped(rem_str)], None))
-                        self.actions.add(recipe.Merge(rem_str, plate_str))
-                        self.actions.add(recipe.Merge(item, rem_plate_str))
+                        if(item=='Chicken'):
+                            self.actions.add(recipe.Merge(item, rem_str,\
+                                [recipe.Cooked(item), recipe.Cooked(rem_str)], None))
+                            self.actions.add(recipe.Merge(rem_str, plate_str))
+                            self.actions.add(recipe.Merge(item, rem_plate_str))
+                        else:
+                            self.actions.add(recipe.Merge(item, rem_str,\
+                                [recipe.Chopped(item), recipe.Chopped(rem_str)], None))
+                            self.actions.add(recipe.Merge(rem_str, plate_str))
+                            self.actions.add(recipe.Merge(item, rem_plate_str))
                     else:
                         self.actions.add(recipe.Merge(item, rem_str))
                         self.actions.add(recipe.Merge(plate_str, rem_str,\
@@ -80,6 +86,22 @@ class SimpleLettuce(Recipe):
     def __init__(self):
         Recipe.__init__(self, 'Lettuce')
         self.add_ingredient(Lettuce(state_index=-1))
+        self.add_goal()
+        self.add_merge_actions()
+
+class LettuceChicken(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'LettuceChicken')
+        self.add_ingredient(Lettuce(state_index=-1))
+        self.add_ingredient(Chicken(state_index=-1))
+        self.add_goal()
+        self.add_merge_actions()
+
+class TomatoChicken(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'TomatoChicken')
+        self.add_ingredient(Tomato(state_index=-1))
+        self.add_ingredient(Chicken(state_index=-1))
         self.add_goal()
         self.add_merge_actions()
 
