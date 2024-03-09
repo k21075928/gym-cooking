@@ -15,12 +15,11 @@ from datetime import datetime
 
 
 class GamePlay(Game):
-    def __init__(self, filename, world, sim_agents,rs=False):
-        Game.__init__(self, world, sim_agents, play=True,rs=False)
+    def __init__(self, filename, world, sim_agents,rs):
+        Game.__init__(self, world, sim_agents,rs, play=True)
         self.filename = filename 
         self.steps = 0
         self.save_dir = 'misc/game/screenshots'
-        self.rs=rs
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
         if self.rs:

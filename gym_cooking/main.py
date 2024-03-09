@@ -69,11 +69,11 @@ def initialize_agents(arglist):
 
             # phase 2: read in recipe list
             elif phase == 2:
-                if arglist.rs ==True:
-                    recipes=['RS']
-                else:
-                    recipes.append(globals()[line]())
-                    print(recipes)
+                # if arglist.rs ==True:
+                #     recipes=['RS']
+                # else:
+                recipes.append(globals()[line]())
+                print(recipes)
 
             # phase 3: read in agent locations (up to num_agents)
             elif phase == 3:

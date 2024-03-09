@@ -18,7 +18,7 @@ def get_image(path):
 
 
 class Game:
-    def __init__(self, world, sim_agents, play=False,rs=False):
+    def __init__(self, world, sim_agents,rs, play=False):
         self.mapGen = world
         self._running = True
         self.world = world

@@ -181,7 +181,8 @@ class OvercookedEnvironment(gym.Env):
                     filename=self.filename,
                     world=self.world,
                     sim_agents=self.sim_agents,
-                    record=self.arglist.record)
+                    record=self.arglist.record,
+                    rs=self.arglist.rs)
             self.game.on_init()
             if self.arglist.record:
                 self.game.save_image_obs(self.t)
