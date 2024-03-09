@@ -15,35 +15,37 @@ from datetime import datetime
 
 
 class GamePlay(Game):
-    def __init__(self, filename, world, sim_agents):
-        Game.__init__(self, world, sim_agents, play=True)
+    def __init__(self, filename, world, sim_agents,rs=False):
+        Game.__init__(self, world, sim_agents, play=True,rs=False)
         self.filename = filename 
         self.steps = 0
         self.save_dir = 'misc/game/screenshots'
+        self.rs=rs
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
-        self.plateLocationInitial= []
-        self.tomatoLocationInitial= []
-        self.chickenLocationInitial= []
-        self.lettuceLocationInitial= []
-        self.onionLocationInitial= []
-        self.deliveryLocation= []
-        self.counter=0
-        self.Initalworld = world
-        for obj in self.Initalworld.get_object_list():
-            if isinstance(obj, Delivery):
-                self.deliveryLocation.append(obj.location)
-            if isinstance(obj, Object):
-                if obj.contains("Plate"):
-                    self.plateLocationInitial.append(obj.location)
-                if obj.contains("Tomato"):
-                    self.tomatoLocationInitial.append(obj.location)
-                if obj.contains("Lettuce"):
-                    self.lettuceLocationInitial.append(obj.location)
-                if obj.contains("Onion"):
-                    self.onionLocationInitial.append(obj.location)
-                if obj.contains("Chicken"):
-                    self.chickenLocationInitial.append(obj.location)
+        if self.rs:
+            self.plateLocationInitial= []
+            self.tomatoLocationInitial= []
+            self.chickenLocationInitial= []
+            self.lettuceLocationInitial= []
+            self.onionLocationInitial= []
+            self.deliveryLocation= []
+            self.counter=0
+            self.Initalworld = world
+            for obj in self.Initalworld.get_object_list():
+                if isinstance(obj, Delivery):
+                    self.deliveryLocation.append(obj.location)
+                if isinstance(obj, Object):
+                    if obj.contains("Plate"):
+                        self.plateLocationInitial.append(obj.location)
+                    if obj.contains("Tomato"):
+                        self.tomatoLocationInitial.append(obj.location)
+                    if obj.contains("Lettuce"):
+                        self.lettuceLocationInitial.append(obj.location)
+                    if obj.contains("Onion"):
+                        self.onionLocationInitial.append(obj.location)
+                    if obj.contains("Chicken"):
+                        self.chickenLocationInitial.append(obj.location)
 
         # tally up all gridsquare types
         self.gridsquares = []
@@ -95,18 +97,19 @@ class GamePlay(Game):
         if event.type == pygame.QUIT:
             self._running = False
         elif event.type == pygame.KEYDOWN:
-            self.steps+=1 
-            self.decrease_health()
-            if (self.steps % 30==0):
-                self.refresh("t")
-            if (self.steps % 30==0):
-                self.refresh("p")
-            if (self.steps % 30==0):
-                self.refresh("l")
-            if (self.steps % 30==0):
-                self.refresh("o")
-            if (self.steps % 50==0):
-                self.refresh("c")
+            if self.rs:
+                self.steps+=1 
+                self.decrease_health()
+                if (self.steps % 30==0):
+                    self.refresh("t")
+                if (self.steps % 30==0):
+                    self.refresh("p")
+                if (self.steps % 30==0):
+                    self.refresh("l")
+                if (self.steps % 30==0):
+                    self.refresh("o")
+                if (self.steps % 50==0):
+                    self.refresh("c")
             # Save current image
             if event.key == pygame.K_RETURN:
                 image_name = '{}_{}.png'.format(self.filename, datetime.now().strftime('%m-%d-%y_%H-%M-%S'))
@@ -129,15 +132,21 @@ class GamePlay(Game):
                 action = KeyToTuple[event.key]
                 self.current_agent.action = action
                 objD = interact(self.current_agent, self.world)
-                if objD is not None:
+                if objD is not None and self.rs:
                     self.isdelivered(objD)
                     objD = None
-
+                if objD is not None and self.rs==False:
+                    self.isdelivered(objD)
+                    objD = None
+                    
     def isdone(self):
         if self.health ==0 or self.health<0:
             print("Terminating because your guests starved to death at "+ str(self.steps)+" steps")
             self._running = False
+
     def isdelivered(self,obj):
+        if self.rs==False:
+            self._running = False
         score = obj.full_name.count("-")
         meat = obj.full_name.count("Chicken")
         if meat>0:

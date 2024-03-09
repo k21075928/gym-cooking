@@ -13,3 +13,12 @@ Code is not optiminised
 takes very long to run
 some times inifinite loop
 Need to fix Delivery box for multiple deliveries
+
+
+CURRENT ERRORS
+Does Action planner doesnt work with refreshing ingredients
+Recipes are only done once in the planners
+
+
+Possible RS planner
+use for just recipe options less health simpler the meals

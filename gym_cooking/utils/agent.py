@@ -32,7 +32,17 @@ class RealAgent:
         self.arglist = arglist
         self.name = name
         self.color = id_color
-        self.recipes = recipes
+        print(recipes)
+        if recipes==['RS']:
+            self.rs=True
+            
+        else:
+            self.recipes = recipes
+            self.planner = E2E_BRTDP(
+                alpha=arglist.alpha,
+                tau=arglist.tau,
+                cap=arglist.cap,
+                main_cap=arglist.main_cap)
 
         # Bayesian Delegation.
         self.reset_subtasks()
@@ -51,17 +61,13 @@ class RealAgent:
             self.priors = 'spatial'
 
         # Navigation planner.
-        self.planner = E2E_BRTDP(
-                alpha=arglist.alpha,
-                tau=arglist.tau,
-                cap=arglist.cap,
-                main_cap=arglist.main_cap)
+        
 
     def __str__(self):
         return color(self.name[-1], self.color)
 
     def __copy__(self):
-        a = Agent(arglist=self.arglist,
+        a = RealAgent(arglist=self.arglist,
                 name=self.name,
                 id_color=self.color,
                 recipes=self.recipes)

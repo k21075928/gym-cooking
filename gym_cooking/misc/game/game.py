@@ -18,13 +18,14 @@ def get_image(path):
 
 
 class Game:
-    def __init__(self, world, sim_agents, play=False):
+    def __init__(self, world, sim_agents, play=False,rs=False):
         self.mapGen = world
         self._running = True
         self.world = world
         self.sim_agents = sim_agents
         self.current_agent = self.sim_agents[0]
         self.play = play
+        self.rs=rs
         
         # Visual parameters
         self.scale = 80   # num pixels per tile
@@ -88,21 +89,23 @@ class Game:
             pygame.display.flip()
             pygame.display.update()
 
+            if self.rs:
+                health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
+                health_rect = health.get_rect(center=(self.width/2, self.height/2))
+
+                self.screen.blit(health, health_rect)
+        if self.rs:
             health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
             health_rect = health.get_rect(center=(self.width/2, self.height/2))
 
             self.screen.blit(health, health_rect)
-
-        health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
-        health_rect = health.get_rect(center=(self.width/2, self.height/2))
-
-        self.screen.blit(health, health_rect)
         
 
 
     def draw_gridsquare(self, gs):
-        health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
-        self.screen.blit(health, (0,0))
+        if self.rs:
+            health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
+            self.screen.blit(health, (0,0))
         sl = self.scaled_location(gs.location)
         fill = pygame.Rect(sl[0], sl[1], self.scale, self.scale)
 

@@ -208,7 +208,7 @@ class OvercookedEnvironment(gym.Env):
 
         
     def step(self, action_dict):
-        if self.counter==0:
+        if self.counter==0 and self.arglist.rs:
             self.objInit()
         self.counter += 1
 
@@ -227,19 +227,21 @@ class OvercookedEnvironment(gym.Env):
         self.check_collisions()
         self.obs_tm1 = copy.copy(self)
 
+        
+        if self.arglist.rs:
+            if (self.counter % 10==0):
+                self.refresh("t")
+            if (self.counter % 10==0):
+                self.refresh("p")
+            if (self.counter % 15==0):
+                self.refresh("l")
+            if (self.counter % 15==0):
+                self.refresh("o")
+            if (self.counter % 15==0):
+                self.refresh("c")
         # Execute.
+        done = self.done()
         self.execute_navigation()
-
-        if (self.counter % 10==0):
-            self.refresh("t")
-        if (self.counter % 10==0):
-            self.refresh("p")
-        if (self.counter % 15==0):
-            self.refresh("l")
-        if (self.counter % 15==0):
-            self.refresh("o")
-        if (self.counter % 15==0):
-            self.refresh("c")
 
         # Visualize.
         self.display()
@@ -252,7 +254,6 @@ class OvercookedEnvironment(gym.Env):
         # Get an image observation
         image_obs = self.game.get_image_obs()
 
-        done = self.done()
         reward = self.reward()
         info = {"t": self.t, "obs": new_obs,
                 "image_obs": image_obs,
@@ -298,15 +299,15 @@ class OvercookedEnvironment(gym.Env):
         return
     def done(self):
         # Done if the episode maxes out
-        # if self.t >= self.arglist.max_num_timesteps and self.arglist.max_num_timesteps:
-        #     self.termination_info = "Terminating because passed {} timesteps".format(
-        #             self.arglist.max_num_timesteps)
-        #     self.successful = False
-        #     return True
+        if self.t >= self.arglist.max_num_timesteps and self.arglist.max_num_timesteps and self.arglist.rs==False:
+            self.termination_info = "Terminating because passed {} timesteps".format(
+                    self.arglist.max_num_timesteps)
+            self.successful = False
+            return True
 
         assert any([isinstance(subtask, recipe.Deliver) for subtask in self.all_subtasks]), "no delivery subtask"
 
-        if self.game.health ==0 or self.game.health<0:
+        if self.game.health ==0 or self.game.health<0 and self.arglist.rs:
             self.termination_info = "Terminating because you guest starved to death at {}".format(
                     self.arglist.max_num_timesteps)
             self.successful = False
@@ -321,10 +322,18 @@ class OvercookedEnvironment(gym.Env):
                 delivery_loc = list(filter(lambda o: o.name=='Delivery', self.world.get_object_list()))[0].location
                 goal_obj_locs = self.world.get_all_object_locs(obj=goal_obj)
                 if not any([gol == delivery_loc for gol in goal_obj_locs]):
+                    if self.arglist.rs ==False:
+                        self.termination_info = ""
+                        self.successful = False
+                        return False
                     print("Completed Recipe onto the next :)")
                     self.termination_info = "1 recipe completed"
+                    self.all_subtasks = self.run_recipes()
                     self.successful = True
-
+        if self.arglist.rs==False:
+            self.termination_info = "Terminating because all deliveries were completed"
+            self.successful = True
+            return True
         self.all_subtasks = self.run_recipes()
         if(self.all_subtasks is None):
             self.termination_info = "No Recipes can be completed"
@@ -378,11 +387,11 @@ class OvercookedEnvironment(gym.Env):
             B_locs = self.world.get_all_object_locs(obj=subtask_action_obj)
         
         elif isinstance(subtask, recipe.Cook):
-            # A: Object that can be chopped.
+            # A: Object that can be cooked.
             A_locs = self.world.get_object_locs(obj=start_obj, is_held=False) + list(map(lambda a: a.location,\
                 list(filter(lambda a: a.name in subtask_agent_names and a.holding == start_obj, self.sim_agents))))
 
-            # B: Cutboard objects.
+            # B: stove objects.
             B_locs = self.world.get_all_object_locs(obj=subtask_action_obj)
 
         # For Merge operator on Deliver subtasks, we look at objects that can be
@@ -543,7 +552,7 @@ class OvercookedEnvironment(gym.Env):
 
     def cache_distances(self):
         """Saving distances between world objects."""
-        counter_grid_names = [name for name in self.world.objects if "Supply" in name or "Counter" in name or "Delivery" in name or "Cut" in name]
+        counter_grid_names = [name for name in self.world.objects if "Supply" in name or "Counter" in name or "Delivery" in name or "Cut" in name or "Stove" in name]
         # Getting all source objects.
         source_objs = copy.copy(self.world.objects["Floor"])
         for name in counter_grid_names:

@@ -47,6 +47,8 @@ def parse_arguments():
     parser.add_argument("--model3", type=str, default=None, help="Model type for agent 3 (bd, up, dc, fb, or greedy)")
     parser.add_argument("--model4", type=str, default=None, help="Model type for agent 4 (bd, up, dc, fb, or greedy)")
 
+    parser.add_argument("--rs", action="store_true", default=False, help="Resource Scarcity Version")
+
     return parser.parse_args()
 
 
@@ -67,8 +69,11 @@ def initialize_agents(arglist):
 
             # phase 2: read in recipe list
             elif phase == 2:
-                recipes.append(globals()[line]())
-                print(recipes)
+                if arglist.rs ==True:
+                    recipes=['RS']
+                else:
+                    recipes.append(globals()[line]())
+                    print(recipes)
 
             # phase 3: read in agent locations (up to num_agents)
             elif phase == 3:
@@ -122,7 +127,7 @@ if __name__ == '__main__':
     if arglist.play:
         env = gym.envs.make("gym_cooking:overcookedEnv-v0", arglist=arglist)
         env.reset()
-        game = GamePlay(env.filename, env.world, env.sim_agents)
+        game = GamePlay(env.filename, env.world, env.sim_agents,arglist.rs)
         game.on_execute()
     else:
         model_types = [arglist.model1, arglist.model2, arglist.model3, arglist.model4]
