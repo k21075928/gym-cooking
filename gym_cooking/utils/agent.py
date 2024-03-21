@@ -32,17 +32,14 @@ class RealAgent:
         self.arglist = arglist
         self.name = name
         self.color = id_color
-        print(recipes)
-        if recipes==['RS']:
-            self.rs=True
-            
-        else:
-            self.recipes = recipes
-            self.planner = E2E_BRTDP(
-                alpha=arglist.alpha,
-                tau=arglist.tau,
-                cap=arglist.cap,
-                main_cap=arglist.main_cap)
+        self.rs= self.arglist.rs
+
+        self.recipes = recipes
+        self.planner = E2E_BRTDP(
+            alpha=arglist.alpha,
+            tau=arglist.tau,
+            cap=arglist.cap,
+            main_cap=arglist.main_cap)
 
         # Bayesian Delegation.
         self.reset_subtasks()
@@ -92,9 +89,12 @@ class RealAgent:
         self.holding = sim_agent.holding
         self.action = sim_agent.action
 
-        if obs.t == 0:
+        if obs.t%15 == 0:
             self.setup_subtasks(env=obs)
-
+            print("OOGA")
+            print(obs.world.print_objects())
+        print("OOGA")
+        obs.display()
         # Select subtask based on Bayesian Delegation.
         self.update_subtasks(env=obs)
         self.new_subtask, self.new_subtask_agent_names = self.delegator.select_subtask(
@@ -102,7 +102,28 @@ class RealAgent:
         self.plan(copy.copy(obs))
         return self.action
 
+
+    # def find_best_recipe(self,se):
+    #     recipeName= self.load_recipes(self.arglist.level)
+    #     return recipeName
+    
+    # def load_recipes(self, level):
+    #     with open('utils/levels/{}.txt'.format(level), 'r') as file:
+    #         # Mark the phases of reading.
+    #         recipesNames=[]
+    #         phase = 1
+    #         for line in file:
+    #             line = line.strip('\n')
+    #             if line == '':
+    #                 phase += 1
+    #             elif phase == 2:
+    #                 recipesNames.append(globals()[line]())
+    #         return recipesNames
+        
     def get_subtasks(self, world):
+        print(self.recipes)
+        # if self.rs:
+        #     self.recipes=self.find_best_recipe(world)
         """Return different subtask permutations for recipes."""
         self.sw = STRIPSWorld(world, self.recipes)
         # [path for recipe 1, path for recipe 2, ...] where each path is a list of actions.

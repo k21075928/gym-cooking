@@ -1,8 +1,8 @@
 t - /
-o - s
+o - /
 p - /
 l - /
--c- *
+--- *
 
 ChickenSalad
 

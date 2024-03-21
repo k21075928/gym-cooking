@@ -22,3 +22,7 @@ Recipes are only done once in the planners
 
 Possible RS planner
 use for just recipe options less health simpler the meals
+
+Picking which recipes the agents want to do (recipe planner) implemented into the 
+-Global
+-could even implement a version of the bayesian delegator to find out which the other agent want to do in terms of recipes

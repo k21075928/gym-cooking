@@ -1,21 +1,18 @@
-t   l
-t   l
-t   l
-           
- */* 
- /-/ 
- */* 
-           
-p   o
-p   o
-p   o
+t p l
+t p l
+t p l
+o   o
+o    
+     
+- - -
+- - -
+* - /
 
 SimpleTomato
 SimpleLettuce
 Salad
 OnionSalad
 
-2 1
-4 1
-4 4
-2 4
+1 1
+3 1
+
