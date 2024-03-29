@@ -228,6 +228,7 @@ class E2E_BRTDP:
         # Run until convergence or until you max out on iteration
         while (diff > self.alpha) and (main_counter < self.main_cap):
             print('\nstarting main loop #', main_counter)
+            print(self.subtask)
             new_upper = self.v_u[(start_repr, self.subtask)]
             new_lower = self.v_l[(start_repr, self.subtask)]
             new_diff = new_upper - new_lower

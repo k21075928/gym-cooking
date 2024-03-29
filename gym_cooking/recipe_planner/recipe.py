@@ -2,6 +2,7 @@ from utils.core import *
 import recipe_planner.utils as recipe
 
 
+
 class Recipe:
     def __init__(self, name):
         self.name = name

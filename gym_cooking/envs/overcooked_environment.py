@@ -39,7 +39,10 @@ class OvercookedEnvironment(gym.Env):
         self.arglist = arglist
         self.t = 0
         self.set_filename()
-        self.rs=self.arglist.rs
+        self.rs1=self.arglist.rs1
+        self.rs2=self.arglist.rs2
+        self.reward=0
+        self.rsflag = False
 
         # For visualizing episode.
         self.rep = []
@@ -48,6 +51,12 @@ class OvercookedEnvironment(gym.Env):
         self.collisions = []
         self.termination_info = ""
         self.successful = False
+
+        self.plateLocationInitial= []
+        self.tomatoLocationInitial= []
+        self.lettuceLocationInitial= []
+        self.onionLocationInitial= []
+        self.chickenLocationInitial= []
 
         
 
@@ -68,6 +77,13 @@ class OvercookedEnvironment(gym.Env):
         new_env.world = copy.copy(self.world)
         new_env.sim_agents = [copy.copy(a) for a in self.sim_agents]
         new_env.distances = self.distances
+        new_env.reward= self.reward
+        new_env.plateLocationInitial = self.plateLocationInitial
+        new_env.tomatoLocationInitial = self.tomatoLocationInitial
+        new_env.lettuceLocationInitial = self.lettuceLocationInitial
+        new_env.onionLocationInitial = self.onionLocationInitial
+        new_env.chickenLocationInitial = self.chickenLocationInitial
+        new_env.rsflag = self.rsflag 
 
         # Make sure new objects and new agents' holdings have the right pointers.
         for a in new_env.sim_agents:
@@ -91,8 +107,10 @@ class OvercookedEnvironment(gym.Env):
         if self.arglist.model4 is not None:
             model += "_model4-{}".format(self.arglist.model4)
         self.filename += model
-        if self.arglist.rs:
-            self.filename+="_resourceScarcity"
+        if self.arglist.rs1:
+            self.filename+="_resourceScarcityVersion1"
+        if self.arglist.rs2:
+            self.filename+="_resourceScarcityVersion2"
 
     def load_level(self, level, num_agents):
         x = 0
@@ -158,6 +176,7 @@ class OvercookedEnvironment(gym.Env):
         self.lettuceLocationInitial= []
         self.onionLocationInitial= []
         self.chickenLocationInitial= []
+        self.rsflag = False
 
         # For visualizing episode.
         self.rep = []
@@ -183,7 +202,7 @@ class OvercookedEnvironment(gym.Env):
                     world=self.world,
                     sim_agents=self.sim_agents,
                     record=self.arglist.record,
-                    rs=self.arglist.rs)
+                    rs1=self.arglist.rs1,rs2=self.arglist.rs2)
             self.game.on_init()
             if self.arglist.record:
                 self.game.save_image_obs(self.t)
@@ -210,8 +229,10 @@ class OvercookedEnvironment(gym.Env):
 
         
     def step(self, action_dict):
-        if self.t==0 and self.arglist.rs:
-            self.objInit()
+        if self.t==0:
+            if self.arglist.rs1 or self.arglist.rs2:
+                self.objInit()
+                
 
         # Track internal environment info.
         self.t += 1
@@ -229,7 +250,7 @@ class OvercookedEnvironment(gym.Env):
         self.obs_tm1 = copy.copy(self)
 
         
-        if not self.arglist.rs:
+        if  0 and self.arglist.rs1 or self.arglist.rs2:
             if (self.t % 10==0):
                 self.refresh("t")
             if (self.t % 10==0):
@@ -255,11 +276,14 @@ class OvercookedEnvironment(gym.Env):
         # Get an image observation
         image_obs = self.game.get_image_obs()
 
-        reward = self.reward()
+        #reward = self.reward()
         info = {"t": self.t, "obs": new_obs,
                 "image_obs": image_obs,
                 "done": done, "termination_info": self.termination_info}
-        return new_obs, reward, done, info
+        if self.rs1 or self.rs2:
+            return new_obs, self.reward, done, info, self.rsflag
+        else:
+            return new_obs, self.reward, done, info, False
 
     def refresh(self,item):
         if item =="t" and self.tomatoLocationInitial is not None:
@@ -299,7 +323,7 @@ class OvercookedEnvironment(gym.Env):
                     self.world.insert(obj=obj)
         return
     def done(self):
-        if self.rs==False:
+        if self.rs1==False and self.rs2 == False:
              # Done if the episode maxes out
             if self.t >= self.arglist.max_num_timesteps and self.arglist.max_num_timesteps:
                 self.termination_info = "Terminating because passed {} timesteps".format(
@@ -327,10 +351,12 @@ class OvercookedEnvironment(gym.Env):
             return True
 
         else:
+            print("RSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+            print(self.game.health)
             if self.game.health ==0 or self.game.health<0:
                 self.termination_info = "Terminating because you guest starved to death at {}".format(
                         self.t)
-                if self.t<101:
+                if self.t<100 or self.reward==0:
                     self.successful = False
                     return False
                 self.successful = True
@@ -345,15 +371,21 @@ class OvercookedEnvironment(gym.Env):
                     goal_obj_locs = self.world.get_all_object_locs(obj=goal_obj)
                     if not any([gol == delivery_loc for gol in goal_obj_locs]):
                         print("Completed Recipe onto the next :)")
+                        self.rsflag= True
                         self.termination_info = "1 recipe completed"
                         self.successful = True
             if(self.all_subtasks is None):
                 self.termination_info = "No Recipes can be completed"
                 self.successful = True
                 return True
+            if self.rs2 and self.t>99:
+                self.termination_info = "Terminating because you ran out of time {}".format(
+                        self.t)
+                self.successful = False
+                return False
 
-    def reward(self):
-        return 1 if self.successful else 0
+            
+
 
     def print_agents(self):
         for sim_agent in self.sim_agents:
@@ -557,11 +589,15 @@ class OvercookedEnvironment(gym.Env):
     def isdelivered(self,obj):
         score = obj.full_name.count("-")
         meat = obj.full_name.count("Chicken")
+        reward = 0
         if meat>0:
-            self.game.increase_health(20*score+50)
+            self.game.increase_health(10*score+20)
+            reward = score +3
         else:
-            self.game.increase_health(20*score)
+            self.game.increase_health(10*score)
+            reward = score
         self.world.remove(obj)
+        self.reward =+ reward
 
     def cache_distances(self):
         """Saving distances between world objects."""

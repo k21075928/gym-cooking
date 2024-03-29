@@ -15,14 +15,14 @@ from datetime import datetime
 
 
 class GamePlay(Game):
-    def __init__(self, filename, world, sim_agents,rs):
-        Game.__init__(self, world, sim_agents,rs, play=True)
+    def __init__(self, filename, world, sim_agents,rs1,rs2):
+        Game.__init__(self, world, sim_agents,rs1,rs2, play=True)
         self.filename = filename 
         self.steps = 0
         self.save_dir = 'misc/game/screenshots'
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
-        if self.rs:
+        if self.rs1 or self.rs2:
             self.plateLocationInitial= []
             self.tomatoLocationInitial= []
             self.chickenLocationInitial= []
@@ -96,7 +96,7 @@ class GamePlay(Game):
         if event.type == pygame.QUIT:
             self._running = False
         elif event.type == pygame.KEYDOWN:
-            if self.rs:
+            if self.rs1 or self.rs2:
                 self.steps+=1 
                 self.decrease_health()
                 if (self.steps % 30==0):
@@ -131,20 +131,24 @@ class GamePlay(Game):
                 action = KeyToTuple[event.key]
                 self.current_agent.action = action
                 objD = interact(self.current_agent, self.world)
-                if objD is not None and self.rs:
+                if objD is not None and self.rs1 or self.rs2:
                     self.isdelivered(objD)
                     objD = None
-                if objD is not None and self.rs==False:
+                if objD is not None and self.rs1==False or self.rs2 ==False:
                     self.isdelivered(objD)
                     objD = None
                     
     def isdone(self):
+        if self.rs2 and self.steps> 100:
+            print("Terminating because timelimit is over "+ str(self.steps)+" steps")
+            self._running = False
+            
         if self.health ==0 or self.health<0:
             print("Terminating because your guests starved to death at "+ str(self.steps)+" steps")
             self._running = False
 
     def isdelivered(self,obj):
-        if self.rs==False:
+        if self.rs1==False or self.rs2 == False:
             self._running = False
         score = obj.full_name.count("-")
         meat = obj.full_name.count("Chicken")

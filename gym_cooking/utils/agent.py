@@ -2,6 +2,7 @@
 from recipe_planner.stripsworld import STRIPSWorld
 import recipe_planner.utils as recipe_utils
 from recipe_planner.utils import *
+from recipe_planner.recipe import *
 
 # Delegation planning
 from delegation_planner.bayesian_delegator import BayesianDelegator
@@ -11,13 +12,14 @@ from navigation_planner.planners.e2e_brtdp import E2E_BRTDP
 import navigation_planner.utils as nav_utils
 from A_Q_Deep.qlearning import Qlearning, DeepQlearning
 # Other core modules
-from utils.core import Counter, Cutboard
+from utils.core import Counter, Cutboard, Food, Plate, Object
 from utils.utils import agent_settings
 
 import numpy as np
 import copy
 from termcolor import colored as color
 from collections import namedtuple
+
 
 AgentRepr = namedtuple("AgentRepr", "name location holding")
 
@@ -32,7 +34,8 @@ class RealAgent:
         self.arglist = arglist
         self.name = name
         self.color = id_color
-        self.rs= self.arglist.rs
+        self.rs1= self.arglist.rs1
+        self.rs2= self.arglist.rs2
 
         self.recipes = recipes
         self.model_type = agent_settings(arglist, name)
@@ -91,11 +94,9 @@ class RealAgent:
         self.holding = sim_agent.holding
         self.action = sim_agent.action
 
-        if obs.t%15 == 0:
+        if obs.t == 0:
             self.setup_subtasks(env=obs)
-            print("OOGA")
             print(obs.world.print_objects())
-        print("OOGA")
         obs.display()
         # Select subtask based on Bayesian Delegation.
         self.update_subtasks(env=obs)
@@ -105,9 +106,43 @@ class RealAgent:
         return self.action
 
 
-    # def find_best_recipe(self,se):
-    #     recipeName= self.load_recipes(self.arglist.level)
-    #     return recipeName
+    def find_best_recipe(self,world):
+        plateCounter=0
+        tomatoCounter=0
+        lettuceCounter=0
+        onionCounter=0
+        chickenCounter=0
+        recipes =[]
+        for obj in world.get_object_list():
+            if isinstance(obj, Object):
+                if obj.contains("Plate"):
+                    plateCounter+=1
+                if obj.contains("Tomato"):
+                    tomatoCounter+=1
+                if obj.contains("Lettuce"):
+                    lettuceCounter+=1
+                if obj.contains("Onion"):
+                    onionCounter+=1
+                if obj.contains("Chicken"):
+                    chickenCounter+=1
+        print("plateCounter=0 tomatoCounter=0 lettuceCounter=0 onionCounter=0 chickenCounter=0")
+        print(plateCounter)
+        print(tomatoCounter)
+        print(lettuceCounter)
+        print(onionCounter)
+        print(chickenCounter)
+        if chickenCounter and plateCounter and tomatoCounter and lettuceCounter:
+            recipes.append(ChickenSalad())
+        elif onionCounter and plateCounter and tomatoCounter and lettuceCounter:
+            recipes.append(OnionSalad())
+        elif  plateCounter and tomatoCounter and lettuceCounter:
+            recipes.append(Salad())
+        elif plateCounter and tomatoCounter:
+            recipes.append(SimpleTomato())
+        elif plateCounter and lettuceCounter:
+            recipes.append(SimpleLettuce())
+        return recipes
+
     
     # def load_recipes(self, level):
     #     with open('utils/levels/{}.txt'.format(level), 'r') as file:
@@ -124,8 +159,11 @@ class RealAgent:
         
     def get_subtasks(self, world):
         print(self.recipes)
-        # if self.rs:
-        #     self.recipes=self.find_best_recipe(world)
+        if self.rs1 or self.rs2:
+            print("Hello2")
+            self.recipes=self.find_best_recipe(world)
+            print("HELOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+        
         """Return different subtask permutations for recipes."""
         self.sw = STRIPSWorld(world, self.recipes)
         # [path for recipe 1, path for recipe 2, ...] where each path is a list of actions.
@@ -177,6 +215,7 @@ class RealAgent:
             print("{} has no subtask".format(color(self.name, self.color)))
             return
         self.subtask_complete = self.is_subtask_complete(world)
+        
         print("{} done with {} according to planner: {}\nplanner has subtask {} with subtask object {}".format(
             color(self.name, self.color),
             self.subtask, self.is_subtask_complete(world),
@@ -218,7 +257,13 @@ class RealAgent:
         An agent is done if all Deliver subtasks are completed."""
         if any([isinstance(t, Deliver) for t in self.incomplete_subtasks]):
             return False
-        return True
+        self.reset_subtasks()
+        self.reset_subtasks()
+        self.new_subtask = None
+        self.new_subtask_agent_names = []
+        self.incomplete_subtasks = []
+        self.signal_reset_delegator = False
+        self.is_subtask_complete = lambda w: False
 
     def get_action_location(self):
         """Return location if agent takes its action---relevant for navigation planner."""
