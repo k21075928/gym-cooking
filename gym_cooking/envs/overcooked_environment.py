@@ -250,7 +250,7 @@ class OvercookedEnvironment(gym.Env):
         self.obs_tm1 = copy.copy(self)
 
         
-        if  0 and self.arglist.rs1 or self.arglist.rs2:
+        if self.arglist.rs1 or self.arglist.rs2:
             if (self.t % 10==0):
                 self.refresh("t")
             if (self.t % 10==0):

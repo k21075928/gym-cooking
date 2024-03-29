@@ -30,10 +30,10 @@ def parse_arguments():
     parser.add_argument("--beta", type=float, default=1.3, help="Beta for softmax in Bayesian delegation updates")
 
     # Navigation Planner
-    parser.add_argument("--alpha", type=float, default=0.05, help="Alpha for BRTDP")
+    parser.add_argument("--alpha", type=float, default=0.01, help="Alpha for BRTDP")
     parser.add_argument("--tau", type=int, default=2, help="Normalize v diff")
-    parser.add_argument("--cap", type=int, default=75, help="Max number of steps in each main loop of BRTDP")
-    parser.add_argument("--main-cap", type=int, default=100, help="Max number of main loops in each run of BRTDP")
+    parser.add_argument("--cap", type=int, default=225, help="Max number of steps in each main loop of BRTDP")
+    parser.add_argument("--main-cap", type=int, default=250, help="Max number of main loops in each run of BRTDP")
 
     # Visualizations
     parser.add_argument("--play", action="store_true", default=False, help="Play interactive game with keys")
@@ -99,7 +99,7 @@ def main_loop(arglist):
     bag = Bag(arglist=arglist, filename=env.filename)
     bag.set_recipe(recipe_subtasks=env.all_subtasks)
 
-    while not env.done():
+    while not env.done() :
         action_dict = {}
 
         for agent in real_agents:
