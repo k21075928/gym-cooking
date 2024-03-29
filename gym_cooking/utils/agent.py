@@ -9,7 +9,7 @@ from delegation_planner.bayesian_delegator import BayesianDelegator
 # Navigation planner
 from navigation_planner.planners.e2e_brtdp import E2E_BRTDP
 import navigation_planner.utils as nav_utils
-
+from A_Q_Deep.qlearning import Qlearning, DeepQlearning
 # Other core modules
 from utils.core import Counter, Cutboard
 from utils.utils import agent_settings
@@ -35,6 +35,8 @@ class RealAgent:
         self.rs= self.arglist.rs
 
         self.recipes = recipes
+        self.model_type = agent_settings(arglist, name)
+        
         self.planner = E2E_BRTDP(
             alpha=arglist.alpha,
             tau=arglist.tau,
@@ -51,7 +53,7 @@ class RealAgent:
         self.beta = arglist.beta
         self.none_action_prob = 0.5
 
-        self.model_type = agent_settings(arglist, name)
+        
         if self.model_type == "up":
             self.priors = 'uniform'
         else:
@@ -139,12 +141,27 @@ class RealAgent:
     def setup_subtasks(self, env):
         """Initializing subtasks and subtask allocator, Bayesian Delegation."""
         self.incomplete_subtasks = self.get_subtasks(world=env.world)
-        self.delegator = BayesianDelegator(
+        if self.model_type == "ql":
+            self.delegator = Qlearning(
+            agent_name=self.name,
+                    all_agent_names=env.get_agent_names(),
+                    model_type=self.model_type,
+                    planner=self.planner,
+                    none_action_prob=self.none_action_prob)
+        elif self.model_type == "dql":
+            self.delegator = DeepQlearning(
                 agent_name=self.name,
-                all_agent_names=env.get_agent_names(),
-                model_type=self.model_type,
-                planner=self.planner,
-                none_action_prob=self.none_action_prob)
+                    all_agent_names=env.get_agent_names(),
+                    model_type=self.model_type,
+                    planner=self.planner,
+                    none_action_prob=self.none_action_prob)
+        else:
+            self.delegator = BayesianDelegator(
+                    agent_name=self.name,
+                    all_agent_names=env.get_agent_names(),
+                    model_type=self.model_type,
+                    planner=self.planner,
+                    none_action_prob=self.none_action_prob)
 
     def reset_subtasks(self):
         """Reset subtasks---relevant for Bayesian Delegation."""
