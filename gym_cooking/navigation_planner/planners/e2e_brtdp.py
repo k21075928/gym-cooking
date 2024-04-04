@@ -88,6 +88,7 @@ class E2E_BRTDP:
         """Return next states when taking action from state."""
         state = self.repr_to_env_dict[state_repr]
         subtask_agents = self.get_subtask_agents(env_state=state)
+        action_dict = {}
 
         # Single agent
         if not self.is_joint:
@@ -97,6 +98,7 @@ class E2E_BRTDP:
             sim_agent.action = action
             interact(agent=sim_agent,
                      world=sim_state.world)
+            action_dict[sim_agent.name] = action
 
         # Joint
         else:
@@ -108,7 +110,11 @@ class E2E_BRTDP:
             interact(agent=sim_agent_1, world=sim_state.world)
             interact(agent=sim_agent_2, world=sim_state.world)
             assert sim_agent_1.location != sim_agent_2.location, 'action {} led to state {}'.format(action, sim_state.get_repr())
+            action_dict[sim_agent_1.name] = sim_agent_1.action
+            action_dict[sim_agent_2.name] = sim_agent_2.action
 
+        # Add the environment's step function here
+        # sim_state.stepSim(action_dict)
         # Track this state in value function and repr dict
         # if it's a new state.
         self.repr_init(env_state=sim_state)
@@ -153,6 +159,7 @@ class E2E_BRTDP:
         start_time = time.time()
         x = self.start
         traj = nav_utils.Stack()
+        
 
         # Terminating if this takes too long e.g. path is infeasible.
         counter = 0
@@ -175,7 +182,7 @@ class E2E_BRTDP:
             # as state `x`.
             modified_state, other_agent_actions = self._get_modified_state_with_other_agent_actions(x)
             modified_state_repr = modified_state.get_repr()
-
+            
             # Get available actions from this state.
             actions = self.get_actions(state_repr=modified_state_repr)
 
@@ -184,6 +191,7 @@ class E2E_BRTDP:
                 self.Q(state=modified_state, action=a, value_f=self.v_u)
                 for a in actions])
             self.v_u[(modified_state_repr, self.subtask)] = new_upper
+            
 
             action_index = argmin([
                 self.Q(state=modified_state, action=a, value_f=self.v_l)
@@ -192,6 +200,7 @@ class E2E_BRTDP:
 
             new_lower = self.Q(state=modified_state, action=a, value_f=self.v_l)
             self.v_l[(modified_state_repr, self.subtask)] = new_lower
+
 
             b = self.get_expected_diff(modified_state, a)
             B = sum(b.values())
@@ -227,8 +236,7 @@ class E2E_BRTDP:
 
         # Run until convergence or until you max out on iteration
         while (diff > self.alpha) and (main_counter < self.main_cap):
-            print('\nstarting main loop #', main_counter)
-            print(self.subtask)
+            # print('\nstarting main loop #', main_counter)
             new_upper = self.v_u[(start_repr, self.subtask)]
             new_lower = self.v_l[(start_repr, self.subtask)]
             new_diff = new_upper - new_lower
@@ -236,13 +244,13 @@ class E2E_BRTDP:
                 self.start.update_display()
                 self.start.display()
                 self.start.print_agents()
-                print('old: upper {}, lower {}'.format(upper, lower))
-                print('new: upper {}, lower {}'.format(new_upper, new_lower))
+                # print('old: upper {}, lower {}'.format(upper, lower))
+                # print('new: upper {}, lower {}'.format(new_upper, new_lower))
             diff = new_diff
             upper = new_upper
             lower = new_lower
             main_counter +=1
-            print('diff = {}, self.alpha = {}'.format(diff, self.alpha))
+            # print('diff = {}, self.alpha = {}'.format(diff, self.alpha))
             self.runSampleTrial()
 
     def _configure_planner_level(self, env, subtask_agent_names, other_agent_planners):
@@ -277,6 +285,18 @@ class E2E_BRTDP:
                 # checking whether object @ location is collidable.
                 env.world.remove(Floor(agent.location))
                 env.world.insert(AgentCounter(agent.location))
+    def reset(self):
+        """Reset the planner's state."""
+        self.subtask = None
+        self.subtask_agent_names = None
+        self.start_obj = None
+        self.goal_obj = None
+        self.subtask_action_obj = None
+        self.is_goal_state = None
+        self.cur_obj_count = 0
+        self.has_more_obj = None
+        self.is_subtask_complete = None
+        self.removed_object = None
 
     def _configure_subtask_information(self, subtask, subtask_agent_names):
         """Tracking information about subtask allocation."""
@@ -320,16 +340,37 @@ class E2E_BRTDP:
             self.has_more_obj = lambda x: int(x) > self.cur_obj_count
             self.is_goal_state = lambda h: self.has_more_obj(
                     len(self.repr_to_env_dict[h].world.get_all_object_locs(self.goal_obj)))
-            if self.removed_object is not None and self.removed_object == self.goal_obj:
-                self.is_subtask_complete = lambda w: self.has_more_obj(
-                        len(w.get_all_object_locs(self.goal_obj)) + 1)
+
+
+            # if self.removed_object is not None and self.removed_object == self.goal_obj:
+            #     self.is_subtask_complete = lambda w: self.has_more_obj(
+            #             len(w.get_all_object_locs(self.goal_obj)) + 1)
+            # else:
+            #     self.is_subtask_complete = lambda w: self.has_more_obj(
+            #             len(w.get_all_object_locs(self.goal_obj)))
+            
+            
+            
+            
+            # Check if subtask is Chop or Cook
+            if isinstance(subtask, Chop) or isinstance(subtask, Cook):
+                # Define a function that checks if there is a corresponding chopped or cooked object
+                self.is_object_processed = lambda w: any(isinstance(o, Object) and o.name.contains(subtask.args) and o.name.contains("Chopped") for o in w.get_object_list()) if isinstance(subtask, Chop) else any( isinstance(o, Object) and o.name.contains("Cooked") for o in w.get_object_list())
+                # print(o.name for o in env.world.get_object_list())
+                # Modify is_subtask_complete to use this function
+                self.is_subtask_complete = lambda w: self.is_object_processed(w) or any(isinstance(o, Object) and o.contains(subtask.args) and (o.contains("Chopped") or o.contains("Cooked")) for o in w.get_object_list())
             else:
-                self.is_subtask_complete = lambda w: self.has_more_obj(
-                        len(w.get_all_object_locs(self.goal_obj)))
+                if self.removed_object is not None and self.removed_object == self.goal_obj:
+                    self.is_subtask_complete = lambda w: self.has_more_obj(
+                            len(w.get_all_object_locs(self.goal_obj)) + 1)
+                else:
+                    self.is_subtask_complete = lambda w: self.has_more_obj(
+                            len(w.get_all_object_locs(self.goal_obj)))
+        
 
     def _configure_planner_space(self, subtask_agent_names):
         """Configure planner to either plan in joint space or single-agent space."""
-        assert len(subtask_agent_names) <= 2, "Cannot have more than 2 agents! Hm... {}".format(subtask_agents)
+        assert len(subtask_agent_names) <= 2, "Cannot have more than 2 agents! Hm... {}".format(subtask_agent_names)
 
         self.is_joint = len(subtask_agent_names) == 2
 
@@ -380,7 +421,7 @@ class E2E_BRTDP:
             self.repr_to_env_dict[es_repr] = copy.copy(env_state)
         return es_repr
 
-    def value_init(self, env_state):
+    def  value_init(self, env_state):
         """Initialize value for environment state."""
         # Skip if already initialized.
         es_repr = env_state.get_repr()
@@ -430,7 +471,20 @@ class E2E_BRTDP:
 
         expected_value = 1.0 * value_f[(ns_repr, self.subtask)]
         return float(cost + expected_value)
+    
+    def has_state_changed_due_to_ingredient_respawn(self, state_repr):
+        """Check if the state has changed due to an ingredient respawn."""
+        # Get the current state from the environment
+        current_state = self.env.repr_to_env_dict[state_repr]
 
+        # Check if the 'has_state_changed_due_to_ingredient_respawn' flag is set in the environment
+        if current_state.has_state_changed_due_to_ingredient_respawn:
+            # If so, reset the flag and return True
+            current_state.has_state_changed_due_to_ingredient_respawn = False
+            return True
+
+        # If not, return False
+        return False
     def V(self, state, _type):
         """Get V*(x) = min_{a \in A} Q_{v*}(x, a)."""
 

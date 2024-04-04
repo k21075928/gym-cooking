@@ -277,6 +277,7 @@ class Object:
                 return False
         return self.is_merged()
 
+   
 
 def mergeable(obj1, obj2):
     # query whether two objects are mergeable

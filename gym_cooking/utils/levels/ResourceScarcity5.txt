@@ -1,8 +1,8 @@
-t   -
-o   s
-p   /
-l   -
-c   *
+-t-p-
+o - s
+p - /
+l - /
+-c-*-
 
 ChickenSalad
 

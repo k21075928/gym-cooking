@@ -39,7 +39,7 @@ class Game:
         self.container_size = tuple((self.container_scale * np.asarray(self.tile_size)).astype(int))
         self.holding_container_size = tuple((self.container_scale * np.asarray(self.holding_size)).astype(int))
         self.UpdateDispenserCounter= 0
-        self.health= 100
+        self.health= 35
 
 
     def on_init(self):

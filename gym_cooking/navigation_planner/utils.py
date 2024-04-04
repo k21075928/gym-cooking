@@ -214,7 +214,11 @@ def get_subtask_obj(subtask):
 
     elif subtask is None:
         return None, None
-
+    elif isinstance(subtask, recipe.Get):
+        # start off non-existent, get fresh
+        start_obj = None
+        goal_obj = get_obj(obj_string=subtask.args[0],
+                type_="is_object", state=FoodState.FRESH)
     else:
         raise NotImplementedError("{} was not recognized".format(subtask))
 

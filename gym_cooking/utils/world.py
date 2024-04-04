@@ -287,6 +287,23 @@ class World:
         assert len(objs) == 1, "looking for {}, found {} at {}".format(desired_obj, ','.join(o.get_name() for o in objs), location)
 
         return objs[0]
+    
+    def get_counter_at(self, location, desired_obj):
+        # Map obj => location => filter by location => return that object.
+        all_objs = self.get_object_list()
+
+        if desired_obj is None:
+            objs = list(filter(
+                lambda obj: obj.location == location and isinstance(obj, Counter) ,
+                all_objs))
+        else:
+            objs = list(filter(lambda obj: obj.name == desired_obj.name and obj.location == location and
+                isinstance(obj, Object) ,
+                all_objs))
+
+        assert len(objs) == 1, "looking for {}, found {} at {}".format(desired_obj, ','.join(o.get_name() for o in objs), location)
+
+        return objs[0]
 
     def get_gridsquare_at(self, location):
         gss = list(filter(lambda o: o.location == location and\

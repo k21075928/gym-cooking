@@ -36,7 +36,8 @@ class RealAgent:
         self.color = id_color
         self.rs1= self.arglist.rs1
         self.rs2= self.arglist.rs2
-
+        self.completeRecipes= []
+        self.resetFlag =False
         self.recipes = recipes
         self.model_type = agent_settings(arglist, name)
         
@@ -73,6 +74,9 @@ class RealAgent:
                 name=self.name,
                 id_color=self.color,
                 recipes=self.recipes)
+        a.rs1 = self.rs1
+        a.rs2 = self.rs2
+        a.completeRecipes= self.completeRecipes= []
         a.subtask = self.subtask
         a.new_subtask = self.new_subtask
         a.subtask_agent_names = self.subtask_agent_names
@@ -88,21 +92,43 @@ class RealAgent:
         return self.holding.full_name
 
     def select_action(self, obs):
+        if obs.delivered != self.completeRecipes:
+            for x in range(100):
+                print("Hello",x)
+            self.completeRecipes = obs.delivered
+            self.signal_reset_delegator = True
+            self.all_done()
+            self.resetFlag = True
+            self.planner = E2E_BRTDP(
+                alpha=self.arglist.alpha,
+                tau=self.arglist.tau,
+                cap=self.arglist.cap,
+                main_cap=self.arglist.main_cap)
+            self.reset_subtasks()
+            self.new_subtask = None
+            self.new_subtask_agent_names = []
+            self.incomplete_subtasks = []
+            self.signal_reset_delegator = False
+            self.is_subtask_complete = lambda w: False
+
+
         """Return best next action for this agent given observations."""
         sim_agent = list(filter(lambda x: x.name == self.name, obs.sim_agents))[0]
         self.location = sim_agent.location
         self.holding = sim_agent.holding
         self.action = sim_agent.action
 
-        if obs.t == 0:
+        if obs.t == 0 or self.resetFlag:
+            self.resetFlag = False
             self.setup_subtasks(env=obs)
             print(obs.world.print_objects())
-        obs.display()
+        # obs.display()
+
         # Select subtask based on Bayesian Delegation.
         self.update_subtasks(env=obs)
         self.new_subtask, self.new_subtask_agent_names = self.delegator.select_subtask(
                 agent_name=self.name)
-        self.plan(copy.copy(obs))
+        self.plan(obs)
         return self.action
 
 
@@ -113,10 +139,20 @@ class RealAgent:
         onionCounter=0
         chickenCounter=0
         recipes =[]
+        chopped=[]
+        cooked=[]
         for obj in world.get_object_list():
             if isinstance(obj, Object):
                 if obj.contains("Plate"):
                     plateCounter+=1
+                # if obj.contains("Cooked"):
+                #     cooked.append(obj)
+                #     break
+                # else:
+                    # if obj.contains("Chopped"):
+                    #     chopped.append(obj)
+                    #     break
+                    # else:
                 if obj.contains("Tomato"):
                     tomatoCounter+=1
                 if obj.contains("Lettuce"):
@@ -125,22 +161,41 @@ class RealAgent:
                     onionCounter+=1
                 if obj.contains("Chicken"):
                     chickenCounter+=1
-        print("plateCounter=0 tomatoCounter=0 lettuceCounter=0 onionCounter=0 chickenCounter=0")
-        print(plateCounter)
-        print(tomatoCounter)
-        print(lettuceCounter)
-        print(onionCounter)
-        print(chickenCounter)
+        # if cooked:
+        #     if cooked[0].contains("Chicken"):
+        #         recipes.append(SimpleChicken())
+        #         return recipes
+        # if chopped:
+        #     if chopped[0].contains("Tomato"):
+        #         recipes.append(SimpleTomato())
+        #     elif chopped[0].contains("Lettuce"):
+        #         recipes.append(SimpleLettuce())
+        #     elif chopped[0].contains("Onion"):
+        #         recipes.append(SimpleOnion())
+        #     return recipes
         if chickenCounter and plateCounter and tomatoCounter and lettuceCounter:
             recipes.append(ChickenSalad())
         elif onionCounter and plateCounter and tomatoCounter and lettuceCounter:
             recipes.append(OnionSalad())
+        elif chickenCounter and plateCounter and tomatoCounter:
+            recipes.append(TomatoChicken())
+        elif chickenCounter and plateCounter and lettuceCounter:
+            recipes.append(LettuceChicken())
+        elif onionCounter and plateCounter and tomatoCounter:
+            recipes.append(TomatoOnion())
+        elif onionCounter and plateCounter and lettuceCounter:
+            recipes.append(OnionLettuce())
         elif  plateCounter and tomatoCounter and lettuceCounter:
             recipes.append(Salad())
+        elif plateCounter and chickenCounter:
+            recipes.append(SimpleChicken())
         elif plateCounter and tomatoCounter:
             recipes.append(SimpleTomato())
         elif plateCounter and lettuceCounter:
             recipes.append(SimpleLettuce())
+        elif plateCounter and onionCounter:
+            recipes.append(SimpleOnion())
+        
         return recipes
 
     
@@ -160,15 +215,17 @@ class RealAgent:
     def get_subtasks(self, world):
         print(self.recipes)
         if self.rs1 or self.rs2:
-            print("Hello2")
             self.recipes=self.find_best_recipe(world)
-            print("HELOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+            
         
         """Return different subtask permutations for recipes."""
         self.sw = STRIPSWorld(world, self.recipes)
         # [path for recipe 1, path for recipe 2, ...] where each path is a list of actions.
         subtasks = self.sw.get_subtasks(max_path_length=self.arglist.max_num_subtasks)
         all_subtasks = [subtask for path in subtasks for subtask in path]
+
+        # Sort subtasks based on priority: Deliver > Chop > Merge
+        # all_subtasks.sort(key=lambda subtask: isinstance(subtask, Deliver) * 3 + isinstance(subtask, Chop) + isinstance(subtask, Merge), reverse=True)
 
         # Uncomment below to view graph for recipe path i
         # i = 0
@@ -237,7 +294,7 @@ class RealAgent:
                             incomplete_subtasks=self.incomplete_subtasks))):
             self.reset_subtasks()
             self.delegator.set_priors(
-                    obs=copy.copy(env),
+                    obs=env,
                     incomplete_subtasks=self.incomplete_subtasks,
                     priors_type=self.priors)
         else:
@@ -258,17 +315,39 @@ class RealAgent:
         if any([isinstance(t, Deliver) for t in self.incomplete_subtasks]):
             return False
         self.reset_subtasks()
-        self.reset_subtasks()
         self.new_subtask = None
         self.new_subtask_agent_names = []
         self.incomplete_subtasks = []
         self.signal_reset_delegator = False
         self.is_subtask_complete = lambda w: False
+        self.planner.reset()
 
     def get_action_location(self):
         """Return location if agent takes its action---relevant for navigation planner."""
         return tuple(np.asarray(self.location) + np.asarray(self.action))
+    
+    def get_unchopped_objects(self, env):
+        """Return a list of unchopped objects in the environment."""
+        unchopped_objects = []
+        for obj in env.world.get_object_list():
+            if isinstance(obj, Object) :
+                if obj.contains("Tomato") and not obj.is_chopped():
+                    unchopped_objects.append(obj)
+                elif obj.contains("Lettuce") and not obj.is_chopped():
+                    unchopped_objects.append(obj)
+                elif obj.contains("Onion") and not obj.is_chopped():
+                    unchopped_objects.append(obj)
+        return unchopped_objects
 
+    def get_uncooked_objects(self, env):
+        """Return a list of uncooked objects in the environment."""
+        uncooked_objects = []
+        for obj in env.world.get_object_list():
+            if isinstance(obj, Object) :
+                if obj.contains("Chicken") and not obj.is_cooked():
+                    uncooked_objects.append(obj)
+        return uncooked_objects
+    
     def plan(self, env, initializing_priors=False):
         """Plan next action---relevant for navigation planner."""
         print('right before planning, {} had old subtask {}, new subtask {}, subtask complete {}'.format(self.name, self.subtask, self.new_subtask, self.subtask_complete))
@@ -279,6 +358,20 @@ class RealAgent:
 
         # If subtask is None, then do nothing.
         if (self.new_subtask is None) or (not self.new_subtask_agent_names):
+            # Check the world state for unchopped or uncooked objects.
+            # unchopped_objects = self.get_unchopped_objects(env)
+            # uncooked_objects = self.get_uncooked_objects(env)
+
+            # if unchopped_objects:
+            #     # Create a new subtask to chop the first unchopped object.
+            #     self.new_subtask = Chop(unchopped_objects[0])
+            #     print("Chopping {}".format(unchopped_objects[0]))
+            #     print(Chop(unchopped_objects[0]))
+            # elif uncooked_objects:
+            #     # Create a new subtask to cook the first uncooked object.
+            #     self.new_subtask = Cook(uncooked_objects[0])
+
+            self.action = (0, 0)
             actions = nav_utils.get_single_actions(env=env, agent=self)
             probs = []
             for a in actions:
@@ -334,9 +427,13 @@ class RealAgent:
                 env.world.get_object_locs(obj=self.goal_obj, is_held=False))))
             self.has_more_obj = lambda x: int(x) > self.cur_obj_count
             self.is_subtask_complete = lambda w: self.has_more_obj(
-                    len(list(filter(lambda o: o in
+                    len(list(filter(lambda o: o in               
                 set(env.world.get_all_object_locs(obj=self.subtask_action_object)),
-                w.get_object_locs(obj=self.goal_obj, is_held=False)))))
+                w.get_object_locs(obj=self.goal_obj, is_held=False))))) 
+            # self.is_subtask_complete = lambda w: self.clear_subtasks() or self.setup_subtasks(env=env) if self.has_more_obj(
+            #         len(list(filter(lambda o: o in               
+            #     set(env.world.get_all_object_locs(obj=self.subtask_action_object)),
+            #     w.get_object_locs(obj=self.goal_obj, is_held=False))))) else False
         # Otherwise, for other subtasks, check based on # of objects.
         else:
             # Current count of desired objects.

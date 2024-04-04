@@ -82,13 +82,40 @@ class SimpleTomato(Recipe):
         self.add_ingredient(Tomato(state_index=-1))
         self.add_goal()
         self.add_merge_actions()
-
+class SimpleOnion(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'Onion')
+        self.add_ingredient(Onion(state_index=-1))
+        self.add_goal()
+        self.add_merge_actions()
+class SimpleChicken(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'Chicken')
+        self.add_ingredient(Chicken(state_index=-1))
+        self.add_goal()
+        self.add_merge_actions()
 class SimpleLettuce(Recipe):
     def __init__(self):
         Recipe.__init__(self, 'Lettuce')
         self.add_ingredient(Lettuce(state_index=-1))
         self.add_goal()
         self.add_merge_actions()
+
+class TomatoOnion(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'TomatoOnion')
+        self.add_ingredient(Tomato(state_index=-1))
+        self.add_ingredient(Onion(state_index=-1))
+        self.add_goal()
+        self.add_merge_actions()
+class OnionLettuce(Recipe):
+    def __init__(self):
+        Recipe.__init__(self, 'OnionLettuce')
+        self.add_ingredient(Onion(state_index=-1))
+        self.add_ingredient(Lettuce(state_index=-1))
+        self.add_goal()
+        self.add_merge_actions()
+
 
 class LettuceChicken(Recipe):
     def __init__(self):

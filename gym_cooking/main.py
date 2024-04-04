@@ -32,8 +32,8 @@ def parse_arguments():
     # Navigation Planner
     parser.add_argument("--alpha", type=float, default=0.01, help="Alpha for BRTDP")
     parser.add_argument("--tau", type=int, default=2, help="Normalize v diff")
-    parser.add_argument("--cap", type=int, default=225, help="Max number of steps in each main loop of BRTDP")
-    parser.add_argument("--main-cap", type=int, default=250, help="Max number of main loops in each run of BRTDP")
+    parser.add_argument("--cap", type=int, default=120, help="Max number of steps in each main loop of BRTDP")
+    parser.add_argument("--main-cap", type=int, default=150, help="Max number of main loops in each run of BRTDP")
 
     # Visualizations
     parser.add_argument("--play", action="store_true", default=False, help="Play interactive game with keys")
@@ -86,41 +86,81 @@ def initialize_agents(arglist):
                     real_agents.append(real_agent)
 
     return real_agents
-
 def main_loop(arglist):
     """The main loop for running experiments."""
     print("Initializing environment and agents.")
     env = gym.envs.make("gym_cooking:overcookedEnv-v0", arglist=arglist)
     obs = env.reset()
-    # game = GameVisualize(env)
-    real_agents = initialize_agents(arglist=arglist)
 
-    # Info bag for saving pkl files
-    bag = Bag(arglist=arglist, filename=env.filename)
-    bag.set_recipe(recipe_subtasks=env.all_subtasks)
+    if arglist.rs1 or arglist.rs2:
+        while env.alive():  # Keep running until the environment is done
+            
+            real_agents = initialize_agents(arglist=arglist)
 
-    while not env.done() :
-        action_dict = {}
+            # Info bag for saving pkl files
+            bag = Bag(arglist=arglist, filename=env.filename)
+            bag.set_recipe(recipe_subtasks=env.all_subtasks)
+            
+            env.isdone=False
+            while not env.isdone and env.alive():
+                action_dict = {}
 
-        for agent in real_agents:
-            action = agent.select_action(obs=obs)
-            action_dict[agent.name] = action
+                for agent in real_agents:
+                    action = agent.select_action(obs=env)
+                    action_dict[agent.name] = action
 
-        obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
+                obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
 
-        # Agents
-        for agent in real_agents:
-            agent.refresh_subtasks(world=env.world)
-            agent.all_done()
+                # Agents
+                for agent in real_agents:
+                    agent.refresh_subtasks(world=env.world)
+                    agent.all_done()
+                    
 
-        # Saving info
-        bag.add_status(cur_time=info['t'], real_agents=real_agents)
+                # Saving info
+                
 
+            # Saving final information before saving pkl file
+            bag.set_collisions(collisions=env.collisions)
+            bag.set_termination(termination_info=env.termination_info,
+                    successful=env.successful)
+    else:
 
-    # Saving final information before saving pkl file
-    bag.set_collisions(collisions=env.collisions)
-    bag.set_termination(termination_info=env.termination_info,
-            successful=env.successful)
+        # game = GameVisualize(env)
+        real_agents = initialize_agents(arglist=arglist)
+        # Info bag for saving pkl files
+        bag = Bag(arglist=arglist, filename=env.filename)
+        bag.set_recipe(recipe_subtasks=env.all_subtasks)
+        delivered=[]
+        while not env.done() :
+            # if delivered!=env.delivered and (arglist.rs1 or arglist.rs2):
+            #     delivered=env.delivered
+            #     new_agents=[]
+            #     # for agent in real_agents:
+            #     #     real_agent = RealAgent(
+            #     #                 arglist=arglist,
+            #     #                 name='agent-'+str(len(new_agents)+1),
+            #     #                 id_color=COLORS[len(new_agents)],
+            #     #                 recipes=[])
+            #     #     new_agents.append(real_agent)
+            #     # real_agents=new_agents
+            #     obs=env.resetfornextround()
+                    
+            action_dict = {}
+
+            for agent in real_agents:
+                action = agent.select_action(obs=obs)
+                action_dict[agent.name] = action
+
+            obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
+
+            # Agents
+            for agent in real_agents:
+                agent.refresh_subtasks(world=env.world)
+                agent.all_done()
+
+            # Saving info
+            bag.add_status(cur_time=info['t'], real_agents=real_agents)
 
 if __name__ == '__main__':
     arglist = parse_arguments()

@@ -43,6 +43,7 @@ class OvercookedEnvironment(gym.Env):
         self.rs2=self.arglist.rs2
         self.reward=0
         self.rsflag = False
+        self.delivered=[]
 
         # For visualizing episode.
         self.rep = []
@@ -57,6 +58,7 @@ class OvercookedEnvironment(gym.Env):
         self.lettuceLocationInitial= []
         self.onionLocationInitial= []
         self.chickenLocationInitial= []
+        self.has_state_changed_due_to_ingredient_respawn = False
 
         
 
@@ -84,6 +86,8 @@ class OvercookedEnvironment(gym.Env):
         new_env.onionLocationInitial = self.onionLocationInitial
         new_env.chickenLocationInitial = self.chickenLocationInitial
         new_env.rsflag = self.rsflag 
+        new_env.t = self.t
+        new_env.delivered = self.delivered
 
         # Make sure new objects and new agents' holdings have the right pointers.
         for a in new_env.sim_agents:
@@ -94,6 +98,32 @@ class OvercookedEnvironment(gym.Env):
                         find_held_objects=True)
         return new_env
 
+    def resetfornextround(self):
+        self.recipes = []
+        self.agent_actions = {}
+        for obj in self.Initalworld.get_object_list():
+            print(obj.name)
+        # For visualizing episode.
+        self.rep = []
+        self.isdone = False
+
+        # For tracking data during an episode.
+        self.collisions = []
+        self.termination_info = ""
+        self.successful = False
+
+        # Load world & distances.
+        
+        self.all_subtasks = self.run_recipes()
+        self.world.make_loc_to_gridsquare()
+        self.world.make_reachability_graph()
+        self.cache_distances()
+        self.obs_tm1 = copy.copy(self)
+
+        
+
+        return copy.copy(self)
+    
     def set_filename(self):
         self.filename = "{}_agents{}_seed{}".format(self.arglist.level,\
             self.arglist.num_agents, self.arglist.seed)
@@ -135,7 +165,7 @@ class OvercookedEnvironment(gym.Env):
                             counter.acquire(obj=obj)
                             self.world.insert(obj=counter)
                             self.world.insert(obj=obj)
-                        # GridSquare, i.e. Floor, Counter, Cutboard, Delivery.
+                        # GridSquare, i.e. Floor, Counter, Cutboard, Delivery, stove.
                         elif rep in RepToClass:
                             newobj = RepToClass[rep]((x, y))
                             self.world.objects.setdefault(newobj.name, []).append(newobj)
@@ -146,7 +176,7 @@ class OvercookedEnvironment(gym.Env):
                     y += 1
                 # Phase 2: Read in recipe list.
                 elif phase == 2:
-                    self.recipes.append(globals()[line]())
+                    self.recipes = self.find_best_recipe(self.world)
 
                 # Phase 3: Read in agent locations (up to num_agents).
                 elif phase == 3:
@@ -177,7 +207,22 @@ class OvercookedEnvironment(gym.Env):
         self.onionLocationInitial= []
         self.chickenLocationInitial= []
         self.rsflag = False
-
+        self.delivered =[]
+        self.isdone = False
+        # sim_state = copy.copy(self)
+        # obj1 = Object((2,3),[Plate()])
+        # obj2 = Object((2,3),[Tomato()])
+        # obj2.chop()   
+        # obj3 = Object((2,3),[Lettuce()])
+        # obj3.chop()
+        # obj4 = Object((2,3),[Chicken()])
+        # obj4.cook()
+        # obj1.merge(obj4)
+        # obj2.merge(obj3)
+        # obj1.merge(obj2)
+        # self.world.insert(obj=obj1)
+        for obj in self.Initalworld.get_object_list():
+            print(obj.name)
         # For visualizing episode.
         self.rep = []
 
@@ -206,7 +251,6 @@ class OvercookedEnvironment(gym.Env):
             self.game.on_init()
             if self.arglist.record:
                 self.game.save_image_obs(self.t)
-
         return copy.copy(self)
 
     def close(self):
@@ -240,7 +284,6 @@ class OvercookedEnvironment(gym.Env):
         print("[environment.step] @ TIMESTEP {}".format(self.t))
         print("===============================")
         self.game.decrease_health()
-
         # Get actions.
         for sim_agent in self.sim_agents:
             sim_agent.action = action_dict[sim_agent.name]
@@ -250,20 +293,11 @@ class OvercookedEnvironment(gym.Env):
         self.obs_tm1 = copy.copy(self)
 
         
-        if self.arglist.rs1 or self.arglist.rs2:
-            if (self.t % 10==0):
-                self.refresh("t")
-            if (self.t % 10==0):
-                self.refresh("p")
-            if (self.t % 15==0):
-                self.refresh("l")
-            if (self.t % 15==0):
-                self.refresh("o")
-            if (self.t % 15==0):
-                self.refresh("c")
+        if  (self.arglist.rs1 or self.arglist.rs2):
+            self.refreshAll()
         # Execute.
-        done = self.done()
         self.execute_navigation()
+        
 
         # Visualize.
         self.display()
@@ -279,110 +313,144 @@ class OvercookedEnvironment(gym.Env):
         #reward = self.reward()
         info = {"t": self.t, "obs": new_obs,
                 "image_obs": image_obs,
-                "done": done, "termination_info": self.termination_info}
+                "done": self.isdone, "termination_info": self.termination_info}
         if self.rs1 or self.rs2:
-            return new_obs, self.reward, done, info, self.rsflag
+            return new_obs, self.reward, self.isdone, info, self.rsflag
         else:
-            return new_obs, self.reward, done, info, False
-
+            return new_obs, self.reward, self.isdone, info, False
+    
+    def alive(self):
+        self.termination_info = "Terminating because you guest starved to death at {}".format(self.t)
+        return self.game.health>0
+        
     def refresh(self,item):
         if item =="t" and self.tomatoLocationInitial is not None:
             for location in self.tomatoLocationInitial:
                 if self.world.is_occupied(location):
                     return
                 else:
-                    obj = Object(location,contents=RepToClass["t"]())
+                    self.world.remove(self.world.get_counter_at(location, None))
+                    counter = Counter(location=location)
+                    counter.color='blue'
+                    obj = Object(location,contents=RepToClass[item]())
+                    counter.acquire(obj=obj)
+                    self.world.insert(obj=counter)
                     self.world.insert(obj=obj)
+                    self.has_state_changed_due_to_ingredient_respawn = True
         if item =="o" and  self.onionLocationInitial is not None:
             for location in self.onionLocationInitial:
                 if self.world.is_occupied(location):
                     return
                 else:
-                    obj = Object(location,contents=RepToClass["o"]())
+                    self.world.remove(self.world.get_counter_at(location, None))
+                    counter = Counter(location=location)
+                    counter.color='blue'
+                    obj = Object(location,contents=RepToClass[item]())
+                    counter.acquire(obj=obj)
+                    self.world.insert(obj=counter)
                     self.world.insert(obj=obj)
+                    self.has_state_changed_due_to_ingredient_respawn = True
         if item =="p" and  self.plateLocationInitial is not None:
             for location in self.plateLocationInitial:
                 if self.world.is_occupied(location):
                     return
                 else:
-                    obj = Object(location,contents=RepToClass["p"]())
+                    self.world.remove(self.world.get_counter_at(location, None))
+                    counter = Counter(location=location)
+                    counter.color='blue'
+                    obj = Object(location,contents=RepToClass[item]())
+                    counter.acquire(obj=obj)
+                    self.world.insert(obj=counter)
                     self.world.insert(obj=obj)
+                    self.has_state_changed_due_to_ingredient_respawn = True
         if item =="l" and  self.lettuceLocationInitial is not None:
             for location in self.lettuceLocationInitial:
                 if self.world.is_occupied(location):
                     return
                 else:
-                    obj = Object(location,contents=RepToClass["l"]())
+                    self.world.remove(self.world.get_counter_at(location, None))
+                    counter = Counter(location=location)
+                    counter.color='blue'
+                    obj = Object(location,contents=RepToClass[item]())
+                    counter.acquire(obj=obj)
+                    self.world.insert(obj=counter)
                     self.world.insert(obj=obj)
+                    self.has_state_changed_due_to_ingredient_respawn = True
         if item =="c" and  self.chickenLocationInitial is not None:
             for location in self.chickenLocationInitial:
                 if self.world.is_occupied(location):
                     return
                 else:
-                    obj = Object(location,contents=RepToClass["c"]())
+                    self.world.remove(self.world.get_counter_at(location, None))
+                    counter = Counter(location=location)
+                    counter.color='blue'
+                    obj = Object(location,contents=RepToClass[item]())
+                    counter.acquire(obj=obj)
+                    self.world.insert(obj=counter)
                     self.world.insert(obj=obj)
+                    self.has_state_changed_due_to_ingredient_respawn = True
         return
     def done(self):
-        if self.rs1==False and self.rs2 == False:
+        # if self.rs1==False and self.rs2 == False:
              # Done if the episode maxes out
-            if self.t >= self.arglist.max_num_timesteps and self.arglist.max_num_timesteps:
-                self.termination_info = "Terminating because passed {} timesteps".format(
-                        self.arglist.max_num_timesteps)
-                self.successful = False
-                return True
+        # if self.t >= self.arglist.max_num_timesteps and self.arglist.max_num_timesteps:
+        #     self.termination_info = "Terminating because passed {} timesteps".format(
+        #             self.arglist.max_num_timesteps)
+        #     self.successful = False
+        #     return True
 
-            assert any([isinstance(subtask, recipe.Deliver) for subtask in self.all_subtasks]), "no delivery subtask"
+        assert any([isinstance(subtask, recipe.Deliver) for subtask in self.all_subtasks]), "no delivery subtask"
 
-            # Done if subtask is completed.
-            for subtask in self.all_subtasks:
-                # Double check all goal_objs are at Delivery.
-                if isinstance(subtask, recipe.Deliver):
-                    _, goal_obj = nav_utils.get_subtask_obj(subtask)
+        # Done if subtask is completed.
+        for subtask in self.all_subtasks:
+            # Double check all goal_objs are at Delivery.
+            if isinstance(subtask, recipe.Deliver):
+                _, goal_obj = nav_utils.get_subtask_obj(subtask)
 
-                    delivery_loc = list(filter(lambda o: o.name=='Delivery', self.world.get_object_list()))[0].location
-                    goal_obj_locs = self.world.get_all_object_locs(obj=goal_obj)
-                    if not any([gol == delivery_loc for gol in goal_obj_locs]):
-                        self.termination_info = ""
-                        self.successful = False
-                        return False
-
-            self.termination_info = "Terminating because all deliveries were completed"
-            self.successful = True
-            return True
-
-        else:
-            print("RSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
-            print(self.game.health)
-            if self.game.health ==0 or self.game.health<0:
-                self.termination_info = "Terminating because you guest starved to death at {}".format(
-                        self.t)
-                if self.t<100 or self.reward==0:
+                delivery_loc = list(filter(lambda o: o.name=='Delivery', self.world.get_object_list()))[0].location
+                goal_obj_locs = self.world.get_all_object_locs(obj=goal_obj)
+                if not any([gol == delivery_loc for gol in goal_obj_locs]):
+                    self.termination_info = ""
                     self.successful = False
+                    self.recipes= self.find_best_recipe(self.world)
                     return False
-                self.successful = True
-                return True
 
-            # Done if subtask is completed.
-            for subtask in self.all_subtasks:
-                # Double check all goal_objs are at Delivery.
-                if isinstance(subtask, recipe.Deliver):
-                    _, goal_obj = nav_utils.get_subtask_obj(subtask)
-                    delivery_loc = list(filter(lambda o: o.name=='Delivery', self.world.get_object_list()))[0].location
-                    goal_obj_locs = self.world.get_all_object_locs(obj=goal_obj)
-                    if not any([gol == delivery_loc for gol in goal_obj_locs]):
-                        print("Completed Recipe onto the next :)")
-                        self.rsflag= True
-                        self.termination_info = "1 recipe completed"
-                        self.successful = True
-            if(self.all_subtasks is None):
-                self.termination_info = "No Recipes can be completed"
-                self.successful = True
-                return True
-            if self.rs2 and self.t>99:
-                self.termination_info = "Terminating because you ran out of time {}".format(
-                        self.t)
-                self.successful = False
-                return False
+        self.termination_info = "Terminating because all deliveries were completed"
+        self.successful = True
+        return True
+
+        # else:
+        #     print("RSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+        #     if self.game.health ==0 or self.game.health<0:
+        #         self.termination_info = "Terminating because you guest starved to death at {}".format(
+        #                 self.t)
+        #         if self.t<100 or self.reward==0:
+        #             self.successful = False
+        #             return False
+        #         self.successful = True
+        #         return True
+
+        #     # Done if subtask is completed.
+        #     for subtask in self.all_subtasks:
+        #         # Double check all goal_objs are at Delivery.
+        #         if isinstance(subtask, recipe.Deliver):
+        #             _, goal_obj = nav_utils.get_subtask_obj(subtask)
+        #             delivery_loc = list(filter(lambda o: o.name=='Delivery', self.world.get_object_list()))[0].location
+        #             goal_obj_locs = self.world.get_all_object_locs(obj=goal_obj)
+        #             if not any([gol == delivery_loc for gol in goal_obj_locs]):
+        #                 print("Completed Recipe onto the next :)")
+        #                 self.rsflag= True
+        #                 self.termination_info = "1 recipe completed"
+        #                 self.successful = True
+        #     if(self.all_subtasks is None):
+        #         self.termination_info = "No Recipes can be completed"
+        #         self.successful = True
+        #         return True
+        #     if self.rs2 and self.t>99:
+        #         self.termination_info = "Terminating because you ran out of time {}".format(
+        #                 self.t)
+        #         self.successful = False
+        #         return True
 
             
 
@@ -405,6 +473,49 @@ class OvercookedEnvironment(gym.Env):
     def get_agent_names(self):
         return [agent.name for agent in self.sim_agents]
 
+    def find_best_recipe(self,world):
+        plateCounter=0
+        tomatoCounter=0
+        lettuceCounter=0
+        onionCounter=0
+        chickenCounter=0
+        recipes =[]
+        for obj in world.get_object_list():
+            if isinstance(obj, Object):
+                if obj.contains("Plate"):
+                    plateCounter+=1
+                if obj.contains("Tomato"):
+                    tomatoCounter+=1
+                if obj.contains("Lettuce"):
+                    lettuceCounter+=1
+                if obj.contains("Onion"):
+                    onionCounter+=1
+                if obj.contains("Chicken"):
+                    chickenCounter+=1
+        if chickenCounter and plateCounter and tomatoCounter and lettuceCounter:
+            recipes.append(ChickenSalad())
+        elif onionCounter and plateCounter and tomatoCounter and lettuceCounter:
+            recipes.append(OnionSalad())
+        elif chickenCounter and plateCounter and tomatoCounter:
+            recipes.append(TomatoChicken())
+        elif chickenCounter and plateCounter and lettuceCounter:
+            recipes.append(LettuceChicken())
+        elif onionCounter and plateCounter and tomatoCounter:
+            recipes.append(TomatoOnion())
+        elif onionCounter and plateCounter and lettuceCounter:
+            recipes.append(OnionLettuce())
+        elif  plateCounter and tomatoCounter and lettuceCounter:
+            recipes.append(Salad())
+        elif plateCounter and chickenCounter:
+            recipes.append(SimpleChicken())
+        elif plateCounter and tomatoCounter:
+            recipes.append(SimpleTomato())
+        elif plateCounter and lettuceCounter:
+            recipes.append(SimpleLettuce())
+        elif plateCounter and onionCounter:
+            recipes.append(SimpleOnion())
+        
+        return recipes
     
     def run_recipes(self):
         """Returns different permutations of completing recipes."""
@@ -584,6 +695,7 @@ class OvercookedEnvironment(gym.Env):
             self.agent_actions[agent.name] = agent.action
             if objD is not None:
                     self.isdelivered(objD)
+                    self.isdone = True
                     objD = None
 
     def isdelivered(self,obj):
@@ -591,13 +703,14 @@ class OvercookedEnvironment(gym.Env):
         meat = obj.full_name.count("Chicken")
         reward = 0
         if meat>0:
-            self.game.increase_health(10*score+20)
+            self.game.increase_health(8*score+10)
             reward = score +3
         else:
-            self.game.increase_health(10*score)
+            self.game.increase_health(8*score)
             reward = score
+        self.delivered.append(obj.name)
         self.world.remove(obj)
-        self.reward =+ reward
+        self.reward += reward
 
     def cache_distances(self):
         """Saving distances between world objects."""
@@ -634,4 +747,3 @@ class OvercookedEnvironment(gym.Env):
 
         # Save all distances under world as well.
         self.world.distances = self.distances
-
