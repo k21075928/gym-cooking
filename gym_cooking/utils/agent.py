@@ -40,7 +40,7 @@ class RealAgent:
         self.resetFlag =False
         self.recipes = recipes
         self.model_type = agent_settings(arglist, name)
-        
+        self.refreshRecipe=False
         self.planner = E2E_BRTDP(
             alpha=arglist.alpha,
             tau=arglist.tau,
@@ -92,7 +92,8 @@ class RealAgent:
         return self.holding.full_name
 
     def select_action(self, obs):
-        if obs.delivered != self.completeRecipes:
+        if (obs.delivered != self.completeRecipes) or self.refreshRecipe:
+            self.refreshRecipe=False
             for x in range(100):
                 print("Hello",x)
             self.completeRecipes = obs.delivered
@@ -132,7 +133,7 @@ class RealAgent:
         return self.action
 
 
-    def find_best_recipe(self,world):
+    def find_best_recipe(self,env):
         plateCounter=0
         tomatoCounter=0
         lettuceCounter=0
@@ -141,7 +142,11 @@ class RealAgent:
         recipes =[]
         chopped=[]
         cooked=[]
+        world = env.world
+        for x in range(300):
+            print("Hello",x)
         for obj in world.get_object_list():
+            print(obj)
             if isinstance(obj, Object):
                 if obj.contains("Plate"):
                     plateCounter+=1
@@ -173,29 +178,32 @@ class RealAgent:
         #     elif chopped[0].contains("Onion"):
         #         recipes.append(SimpleOnion())
         #     return recipes
-        if chickenCounter and plateCounter and tomatoCounter and lettuceCounter:
-            recipes.append(ChickenSalad())
-        elif onionCounter and plateCounter and tomatoCounter and lettuceCounter:
-            recipes.append(OnionSalad())
-        elif chickenCounter and plateCounter and tomatoCounter:
-            recipes.append(TomatoChicken())
-        elif chickenCounter and plateCounter and lettuceCounter:
-            recipes.append(LettuceChicken())
-        elif onionCounter and plateCounter and tomatoCounter:
-            recipes.append(TomatoOnion())
-        elif onionCounter and plateCounter and lettuceCounter:
-            recipes.append(OnionLettuce())
-        elif  plateCounter and tomatoCounter and lettuceCounter:
-            recipes.append(Salad())
-        elif plateCounter and chickenCounter:
-            recipes.append(SimpleChicken())
-        elif plateCounter and tomatoCounter:
-            recipes.append(SimpleTomato())
-        elif plateCounter and lettuceCounter:
-            recipes.append(SimpleLettuce())
-        elif plateCounter and onionCounter:
-            recipes.append(SimpleOnion())
-        
+        if plateCounter:
+            if chickenCounter  and tomatoCounter and lettuceCounter and (env.game.get_health()>30 or env.game.get_time()>30) :
+                recipes.append(ChickenSalad())
+            elif onionCounter  and tomatoCounter and lettuceCounter and (env.game.get_health()>30 or env.game.get_time()>30):
+                recipes.append(OnionSalad())
+            elif chickenCounter  and tomatoCounter and (env.game.get_health()>20 or env.game.get_time()>20):
+                recipes.append(TomatoChicken())
+            elif chickenCounter  and lettuceCounter and (env.game.get_health()>20 or env.game.get_time()>20):
+                recipes.append(LettuceChicken())
+            elif onionCounter  and tomatoCounter and (env.game.get_health()>20 or env.game.get_time()>20):
+                recipes.append(TomatoOnion())
+            elif onionCounter  and lettuceCounter and (env.game.get_health()>20 or env.game.get_time()>20):
+                recipes.append(OnionLettuce())
+            elif tomatoCounter and lettuceCounter and (env.game.get_health()>20 or env.game.get_time()>20):
+                recipes.append(Salad())
+            elif chickenCounter:
+                recipes.append(SimpleChicken())
+            elif tomatoCounter:
+                recipes.append(SimpleTomato())
+            elif lettuceCounter:
+                recipes.append(SimpleLettuce())
+            elif onionCounter:
+                recipes.append(SimpleOnion())
+        else:
+            self.refreshRecipe=True
+        print(recipes)
         return recipes
 
     
@@ -212,14 +220,13 @@ class RealAgent:
     #                 recipesNames.append(globals()[line]())
     #         return recipesNames
         
-    def get_subtasks(self, world):
-        print(self.recipes)
+    def get_subtasks(self, env):
         if self.rs1 or self.rs2:
-            self.recipes=self.find_best_recipe(world)
+            self.recipes=self.find_best_recipe(env)
             
         
         """Return different subtask permutations for recipes."""
-        self.sw = STRIPSWorld(world, self.recipes)
+        self.sw = STRIPSWorld(env.world, self.recipes)
         # [path for recipe 1, path for recipe 2, ...] where each path is a list of actions.
         subtasks = self.sw.get_subtasks(max_path_length=self.arglist.max_num_subtasks)
         all_subtasks = [subtask for path in subtasks for subtask in path]
@@ -235,7 +242,7 @@ class RealAgent:
 
     def setup_subtasks(self, env):
         """Initializing subtasks and subtask allocator, Bayesian Delegation."""
-        self.incomplete_subtasks = self.get_subtasks(world=env.world)
+        self.incomplete_subtasks = self.get_subtasks(env=env)
         if self.model_type == "ql":
             self.delegator = Qlearning(
             agent_name=self.name,

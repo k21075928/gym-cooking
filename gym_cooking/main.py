@@ -32,8 +32,8 @@ def parse_arguments():
     # Navigation Planner
     parser.add_argument("--alpha", type=float, default=0.01, help="Alpha for BRTDP")
     parser.add_argument("--tau", type=int, default=2, help="Normalize v diff")
-    parser.add_argument("--cap", type=int, default=120, help="Max number of steps in each main loop of BRTDP")
-    parser.add_argument("--main-cap", type=int, default=150, help="Max number of main loops in each run of BRTDP")
+    parser.add_argument("--cap", type=int, default=60, help="Max number of steps in each main loop of BRTDP")
+    parser.add_argument("--main-cap", type=int, default=80, help="Max number of main loops in each run of BRTDP")
 
     # Visualizations
     parser.add_argument("--play", action="store_true", default=False, help="Play interactive game with keys")
@@ -71,8 +71,6 @@ def initialize_agents(arglist):
             # phase 2: read in recipe list
             elif phase == 2:
                 recipes.append(globals()[line]())
-                print(recipes[0])
-                print("hello1")
                 
             # phase 3: read in agent locations (up to num_agents)
             elif phase == 3:
@@ -93,13 +91,14 @@ def main_loop(arglist):
     obs = env.reset()
 
     if arglist.rs1 or arglist.rs2:
+        bag = Bag(arglist=arglist, filename=env.filename)
+        bag.set_recipe(recipe_subtasks=env.all_subtasks)
         while env.alive():  # Keep running until the environment is done
             
             real_agents = initialize_agents(arglist=arglist)
 
             # Info bag for saving pkl files
-            bag = Bag(arglist=arglist, filename=env.filename)
-            bag.set_recipe(recipe_subtasks=env.all_subtasks)
+            
             
             env.isdone=False
             while not env.isdone and env.alive():
@@ -119,11 +118,14 @@ def main_loop(arglist):
 
                 # Saving info
                 
+        bag.get_delivered(env.delivered)
+        if arglist.rs2:
+            bag.get_score(env.game.score)
 
-            # Saving final information before saving pkl file
-            bag.set_collisions(collisions=env.collisions)
-            bag.set_termination(termination_info=env.termination_info,
-                    successful=env.successful)
+        # Saving final information before saving pkl file
+        bag.set_collisions(collisions=env.collisions)
+        bag.set_termination(termination_info=env.termination_info,
+                successful=env.successful)
     else:
 
         # game = GameVisualize(env)

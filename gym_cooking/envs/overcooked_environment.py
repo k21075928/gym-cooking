@@ -59,6 +59,8 @@ class OvercookedEnvironment(gym.Env):
         self.onionLocationInitial= []
         self.chickenLocationInitial= []
         self.has_state_changed_due_to_ingredient_respawn = False
+        self.item_refresh_rate = {"Plate": 10, "Lettuce": 15, "Tomato": 20, "Onion": 25, "Chicken": 30}
+        self.item_delivery_timer = {item: rate for item, rate in self.item_refresh_rate.items()}
 
         
 
@@ -276,6 +278,7 @@ class OvercookedEnvironment(gym.Env):
         if self.t==0:
             if self.arglist.rs1 or self.arglist.rs2:
                 self.objInit()
+                self.game.item_delivery_timer = {item: rate for item, rate in self.item_refresh_rate.items()}
                 
 
         # Track internal environment info.
@@ -283,7 +286,10 @@ class OvercookedEnvironment(gym.Env):
         print("===============================")
         print("[environment.step] @ TIMESTEP {}".format(self.t))
         print("===============================")
-        self.game.decrease_health()
+        if self.rs1:
+            self.game.decrease_health()
+        if self.rs2:
+            self.game.decrease_time()
         # Get actions.
         for sim_agent in self.sim_agents:
             sim_agent.action = action_dict[sim_agent.name]
@@ -320,71 +326,39 @@ class OvercookedEnvironment(gym.Env):
             return new_obs, self.reward, self.isdone, info, False
     
     def alive(self):
-        self.termination_info = "Terminating because you guest starved to death at {}".format(self.t)
-        return self.game.health>0
+        if self.rs1:
+            self.termination_info = "Terminating because you guest starved to death at {}".format(self.t)
+            return self.game.health>0
+        if self.rs2:
+            self.termination_info = "Terminating because you ran out of time {}".format(self.t)
+            return self.game.timer>0
         
-    def refresh(self,item):
-        if item =="t" and self.tomatoLocationInitial is not None:
-            for location in self.tomatoLocationInitial:
+    def refreshAll(self):
+        for item, rate in self.item_refresh_rate.items():
+            refresh = self.t % rate
+            if refresh == 0:
+                self.refresh(item[0].lower())
+                self.game.item_delivery_timer[item] = rate
+            else:
+                self.game.item_delivery_timer[item] = rate-refresh
+
+    def refresh(self, item):
+        item_initial_locations = {
+            "t": self.tomatoLocationInitial,
+            "o": self.onionLocationInitial,
+            "p": self.plateLocationInitial,
+            "l": self.lettuceLocationInitial,
+            "c": self.chickenLocationInitial
+        }
+
+        if item_initial_locations[item] is not None:
+            for location in item_initial_locations[item]:
                 if self.world.is_occupied(location):
                     return
                 else:
-                    self.world.remove(self.world.get_counter_at(location, None))
+                    self.world.remove(self.world.get_counter_at(location))
                     counter = Counter(location=location)
-                    counter.color='blue'
-                    obj = Object(location,contents=RepToClass[item]())
-                    counter.acquire(obj=obj)
-                    self.world.insert(obj=counter)
-                    self.world.insert(obj=obj)
-                    self.has_state_changed_due_to_ingredient_respawn = True
-        if item =="o" and  self.onionLocationInitial is not None:
-            for location in self.onionLocationInitial:
-                if self.world.is_occupied(location):
-                    return
-                else:
-                    self.world.remove(self.world.get_counter_at(location, None))
-                    counter = Counter(location=location)
-                    counter.color='blue'
-                    obj = Object(location,contents=RepToClass[item]())
-                    counter.acquire(obj=obj)
-                    self.world.insert(obj=counter)
-                    self.world.insert(obj=obj)
-                    self.has_state_changed_due_to_ingredient_respawn = True
-        if item =="p" and  self.plateLocationInitial is not None:
-            for location in self.plateLocationInitial:
-                if self.world.is_occupied(location):
-                    return
-                else:
-                    self.world.remove(self.world.get_counter_at(location, None))
-                    counter = Counter(location=location)
-                    counter.color='blue'
-                    obj = Object(location,contents=RepToClass[item]())
-                    counter.acquire(obj=obj)
-                    self.world.insert(obj=counter)
-                    self.world.insert(obj=obj)
-                    self.has_state_changed_due_to_ingredient_respawn = True
-        if item =="l" and  self.lettuceLocationInitial is not None:
-            for location in self.lettuceLocationInitial:
-                if self.world.is_occupied(location):
-                    return
-                else:
-                    self.world.remove(self.world.get_counter_at(location, None))
-                    counter = Counter(location=location)
-                    counter.color='blue'
-                    obj = Object(location,contents=RepToClass[item]())
-                    counter.acquire(obj=obj)
-                    self.world.insert(obj=counter)
-                    self.world.insert(obj=obj)
-                    self.has_state_changed_due_to_ingredient_respawn = True
-        if item =="c" and  self.chickenLocationInitial is not None:
-            for location in self.chickenLocationInitial:
-                if self.world.is_occupied(location):
-                    return
-                else:
-                    self.world.remove(self.world.get_counter_at(location, None))
-                    counter = Counter(location=location)
-                    counter.color='blue'
-                    obj = Object(location,contents=RepToClass[item]())
+                    obj = Object(location, contents=RepToClass[item]())
                     counter.acquire(obj=obj)
                     self.world.insert(obj=counter)
                     self.world.insert(obj=obj)
@@ -702,15 +676,40 @@ class OvercookedEnvironment(gym.Env):
         score = obj.full_name.count("-")
         meat = obj.full_name.count("Chicken")
         reward = 0
-        if meat>0:
-            self.game.increase_health(8*score+10)
-            reward = score +3
-        else:
-            self.game.increase_health(8*score)
-            reward = score
+        if self.rs1:
+            if meat>0:
+                self.game.increase_health(5*score+5)
+                reward = score +3
+            else:
+                self.game.increase_health(5*score)
+                reward = score
+        if self.rs2:
+            """Make rewards exponential increase instead of Linear increase - To value higher scores for more complex recipes"""
+            if meat>0:
+                self.game.increase_score(round(10 * (score ** 1.5) + 10))  
+                reward = score + 3
+            else:
+                self.game.increase_score(round(10 * (score ** 1.5)))  
+                reward = score
         self.delivered.append(obj.name)
+        delivery = self.world.get_counter_at(obj.location)
         self.world.remove(obj)
+        delivery.release()
         self.reward += reward
+        # if self.plateLocationInitial is not None:
+        #     for location in self.plateLocationInitial:
+        #         if self.world.is_occupied(location):
+        #             return
+        #         else:
+        #             self.world.remove(self.world.get_counter_at(location, None))
+        #             counter = Counter(location=location)
+        #             counter.color='blue'
+        #             obj = Object(location,contents=RepToClass['p']())
+        #             counter.acquire(obj=obj)
+        #             self.world.insert(obj=counter)
+        #             self.world.insert(obj=obj)
+        #             self.has_state_changed_due_to_ingredient_respawn = True
+        #             return
 
     def cache_distances(self):
         """Saving distances between world objects."""

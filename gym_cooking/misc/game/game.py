@@ -39,7 +39,12 @@ class Game:
         self.container_size = tuple((self.container_scale * np.asarray(self.tile_size)).astype(int))
         self.holding_container_size = tuple((self.container_scale * np.asarray(self.holding_size)).astype(int))
         self.UpdateDispenserCounter= 0
-        self.health= 35
+        self.item_delivery_timer = {}
+        if self.rs2:
+            self.timer=60
+            self.score=0
+        if self.rs1:
+            self.health= 35
 
 
     def on_init(self):
@@ -58,10 +63,37 @@ class Game:
             self._running = False
 
     def decrease_health(self):
-        self.health = self.health - 1
+        if self.rs1:
+            self.health = self.health - 1
 
     def increase_health(self,num):
-        self.health = self.health + num
+        if self.rs1:
+            self.health = self.health + num
+    
+    def decrease_time(self):
+        if self.rs2:
+            self.timer = self.timer - 1
+    def increase_score(self,num):
+        if self.rs2:
+            self.score = self.score + num
+    
+    def get_health(self):
+        if self.rs1:
+            return self.health
+        else:
+            return 0
+    
+    def get_time(self):
+        if self.rs2:
+            return self.timer
+        else:  
+            return 0
+    
+    def get_score(self):
+        if self.rs2:
+            return self.score
+        else:
+            return 0
 
     def on_render(self):
         self.screen.fill(Color.FLOOR)
@@ -90,23 +122,69 @@ class Game:
             pygame.display.flip()
             pygame.display.update()
 
-            if self.rs1 or self.rs2:
+            if self.rs1 :
                 health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
                 health_rect = health.get_rect(center=(self.width/2, self.height/2))
 
                 self.screen.blit(health, health_rect)
-        if self.rs1 or self.rs2:
+            if self.rs2:
+                timer = self.font.render("time: "+str(self.timer), True, (0, 0, 0))
+                timer_rect = timer.get_rect(center=(self.width/2, self.height/2))
+
+                self.screen.blit(timer, timer_rect)
+                score = self.font.render("score: "+str(self.score), True, (0, 0, 0))
+                score_rect = score.get_rect(center=(self.width/2, self.height/2+30))
+
+                self.screen.blit(score, score_rect)
+            
+        if self.rs1:
             health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
             health_rect = health.get_rect(center=(self.width/2, self.height/2))
 
             self.screen.blit(health, health_rect)
+        if self.rs2:
+            timer = self.font.render("time: "+str(self.timer), True, (0, 0, 0))
+            timer_rect = timer.get_rect(center=(self.width/2, self.height/2))
+
+            self.screen.blit(timer, timer_rect)
+            score = self.font.render("score: "+str(self.score), True, (0, 0, 0))
+            score_rect = score.get_rect(center=(self.width/2, self.height/2+30))
+
+            self.screen.blit(score, score_rect)
+            
         
 
 
     def draw_gridsquare(self, gs):
-        if self.rs1 or self.rs2:
+        if self.rs1:
             health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
             self.screen.blit(health, (0,0))
+            if self.item_delivery_timer:
+                y_offset = 15
+                delivery_title = self.font.render("Delivery", True, (0, 0, 0))
+                self.screen.blit(delivery_title, (0, y_offset))
+                y_offset += 15
+                for item, timer in self.item_delivery_timer.items():
+                    item_delivery_info = self.font.render(f"{item}: {timer}", True, (0, 0, 0))
+                    self.screen.blit(item_delivery_info, (0, y_offset))
+                    y_offset += 15
+
+        if self.rs2:
+            timer = self.font.render("time: "+str(self.timer), True, (0, 0, 0))
+            self.screen.blit(timer, (0,0))
+            score = self.font.render("score: "+str(self.score), True, (0, 0, 0))
+            self.screen.blit(score, (0,15))
+            if self.item_delivery_timer:
+                y_offset = 30
+                delivery_title = self.font.render("Delivery", True, (0, 0, 0))
+                self.screen.blit(delivery_title, (0, y_offset))
+                y_offset += 15
+                for item, timer in self.item_delivery_timer.items():
+                    item_delivery_info = self.font.render(f"{item}: {timer}", True, (0, 0, 0))
+                    self.screen.blit(item_delivery_info, (0, y_offset))
+                    y_offset += 15
+
+
         sl = self.scaled_location(gs.location)
         fill = pygame.Rect(sl[0], sl[1], self.scale, self.scale)
 

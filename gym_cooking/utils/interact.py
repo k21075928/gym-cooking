@@ -44,6 +44,19 @@ def interact(agent, world):
                 if world.arglist.play:
                     gs.acquire(agent.holding)
                     agent.release()
+            # else:
+            #     if mergeable2plates(agent.holding, obj):
+            #         world.remove(obj)
+            #         o = gs.release()
+            #         world.remove(agent.holding)
+            #         combined_contents = agent.holding.contents + obj.contents
+            #         new_plate = Plate(contents=combined_contents)
+            #         agent.acquire(new_plate)
+            #         world.insert(agent.holding)
+            #         empty_plate = Plate()
+            #         world.insert(empty_plate, location=obj.location)
+
+                
 
 
         # if holding something, empty gridsquare in front --> chop or drop

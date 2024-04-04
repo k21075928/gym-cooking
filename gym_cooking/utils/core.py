@@ -298,6 +298,27 @@ def mergeable(obj1, obj2):
             return False  # more than 1 plate
     return True
 
+def mergeable2plates(obj1, obj2):
+    # Query whether two objects are mergeable with two plates
+    contents = obj1.contents + obj2.contents
+    # Check that there are at most two plates
+    try:
+        contents.remove(Plate())
+        contents.remove(Plate())
+    except:
+        pass  # do nothing, 2 plates are ok
+    finally:
+        try:
+            contents.remove(Plate())
+        except:
+            for c in contents:   # everything else must be in last state
+                if not c.done():
+                    return False
+        else:
+            return False  # more than 2 plates
+    return True
+    
+
 
 # -----------------------------------------------------------
 

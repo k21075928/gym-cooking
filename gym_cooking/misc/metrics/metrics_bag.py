@@ -8,6 +8,8 @@ class Bag:
         self.directory = "misc/metrics/pickles/"
         self.filename = filename
         self.set_general()
+        self.rs1=arglist.rs1
+        self.rs2=arglist.rs2
 
     def set_general(self):
         self.data["level"] = self.arglist.level
@@ -59,6 +61,18 @@ class Bag:
         self.data["num_completed_subtasks"].append(self.data["num_total_subtasks"] - len(incomplete_subtasks))
 
     def set_termination(self, termination_info, successful):
+        if self.rs1:
+            self.data["termination"] = termination_info
+            for k, v in self.data.items():
+                print("{}: {}\n".format(k, v))
+            print("Delivered: {}".format( self.data["delivered"]))
+            return
+        if self.rs2:
+            for k, v in self.data.items():
+                print("{}: {}\n".format(k, v))
+            print("Score: {}. Delivered: {}".format(self.data["score"], self.data["delivered"]))
+            return
+        
         self.data["termination"] = termination_info
         self.data["was_successful"] = successful
         for k, v in self.data.items():
@@ -67,3 +81,13 @@ class Bag:
         print('completed {} / {} subtasks'.format(self.data["num_completed_subtasks_end"], self.data["num_total_subtasks"]))
         #pickle.dump(self.data, open(self.directory+self.filename+'.pkl', "wb"))
         print("Saved to {}".format(self.directory+self.filename+'.pkl'))
+
+    def get_score(self, score):
+        if score:
+            self.data["was_successful"] = True
+        self.data["score"] = score
+
+    def get_delivered(self, delivered):
+        if delivered:
+            self.data["was_successful"] = True
+        self.data["delivered"] = delivered

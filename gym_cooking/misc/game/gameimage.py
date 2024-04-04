@@ -7,11 +7,17 @@ from misc.game.game import Game
 
 
 class GameImage(Game):
-    def __init__(self, filename, world, sim_agents, rs1,rs2, record=False):
+    def __init__(self, filename, world, sim_agents, rs1, rs2, record=False):
         Game.__init__(self, world, sim_agents, rs1, rs2)
-        self.game_record_dir = 'misc/game/record/{}/'.format(filename)
+        self.base_dir = 'misc/game/record/{}/Trial_'.format(filename)
         self.record = record
+        self.game_record_dir = self.get_unique_dir()
 
+    def get_unique_dir(self):
+        i = 1
+        while os.path.exists(self.base_dir + str(i)):
+            i += 1
+        return self.base_dir + str(i)
 
     def on_init(self):
         super().on_init()

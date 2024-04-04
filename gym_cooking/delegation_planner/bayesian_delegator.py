@@ -272,7 +272,6 @@ class BayesianDelegator(Delegator):
                 other_agent_planners=other_planners)
         old_q = self.planner.Q(state=state, action=action,
                 value_f=self.planner.v_l)
-        # obs_tm1.stepSim(action)
         # Collect actions the agents could have taken in obs_tm1.
         valid_nav_actions = self.planner.get_actions(state_repr=obs_tm1.get_repr())
 
