@@ -47,9 +47,12 @@ def parse_arguments():
     parser.add_argument("--model3", type=str, default=None, help="Model type for agent 3 (bd, up, dc, fb, or greedy)")
     parser.add_argument("--model4", type=str, default=None, help="Model type for agent 4 (bd, up, dc, fb, or greedy)")
 
-    parser.add_argument("--rs1", action="store_true", default=False, help="Resource Scarcity Version")
-    parser.add_argument("--rs2", action="store_true", default=False, help="Resource Scarcity Version")
+    # Resource Scarcity Versions
+    parser.add_argument("--rs1", action="store_true", default=False, help="Resource Scarcity Version 1 ")
+    parser.add_argument("--rs2", action="store_true", default=False, help="Resource Scarcity Version 2 ")
 
+    #Deep Q Learning
+    parser.add_argument("--dql", action="store_true", default=False, help="Deep Q Learning") 
     return parser.parse_args()
 
 
@@ -75,13 +78,21 @@ def initialize_agents(arglist):
             # phase 3: read in agent locations (up to num_agents)
             elif phase == 3:
                 if len(real_agents) < arglist.num_agents:
-                    loc = line.split(' ')
-                    real_agent = RealAgent(
+                    if arglist.dql:
+                        real_agent = DQLAgent(
                             arglist=arglist,
                             name='agent-'+str(len(real_agents)+1),
                             id_color=COLORS[len(real_agents)],
                             recipes=recipes)
-                    real_agents.append(real_agent)
+                        real_agents.append(real_agent)
+                    else:
+                        loc = line.split(' ')
+                        real_agent = RealAgent(
+                                arglist=arglist,
+                                name='agent-'+str(len(real_agents)+1),
+                                id_color=COLORS[len(real_agents)],
+                                recipes=recipes)
+                        real_agents.append(real_agent)
 
     return real_agents
 def main_loop(arglist):
@@ -164,6 +175,74 @@ def main_loop(arglist):
             # Saving info
             bag.add_status(cur_time=info['t'], real_agents=real_agents)
 
+
+
+def dqlMainLoop(arglist):
+    """The main loop for running experiments."""
+    print("Initializing environment and agents.")
+    env = gym.envs.make("gym_cooking:overcookedEnv-v0", arglist=arglist)
+    obs = env.reset()
+    if arglist.rs1 or arglist.rs2:
+        bag = Bag(arglist=arglist, filename=env.filename)
+        bag.set_recipe(recipe_subtasks=env.all_subtasks)
+        while env.alive():  # Keep running until the environment is done
+            
+            real_agents = initialize_agents(arglist=arglist)
+
+            # Info bag for saving pkl files
+            
+            
+            env.isdone=False
+            while not env.isdone and env.alive():
+                action_dict = {}
+
+                for agent in real_agents:
+                    action = agent.select_action(obs=env)
+                    action_dict[agent.name] = action
+
+                obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
+
+                # Agents
+                for agent in real_agents:
+                    agent.refresh_subtasks(world=env.world)
+                    agent.all_done()
+                    
+
+                # Saving info
+                
+        bag.get_delivered(env.delivered)
+        if arglist.rs2:
+            bag.get_score(env.game.score)
+
+        # Saving final information before saving pkl file
+        bag.set_collisions(collisions=env.collisions)
+        bag.set_termination(termination_info=env.termination_info,
+                successful=env.successful)
+    else:
+
+        # game = GameVisualize(env)
+        real_agents = initialize_agents(arglist=arglist)
+        # Info bag for saving pkl files
+        bag = Bag(arglist=arglist, filename=env.filename)
+        bag.set_recipe(recipe_subtasks=env.all_subtasks)
+        delivered=[]
+        while not env.done() :
+            action_dict = {}
+
+            for agent in real_agents:
+                action = agent.select_action(obs=obs)
+                action_dict[agent.name] = action
+
+            obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
+
+            # Agents
+            for agent in real_agents:
+                agent.refresh_subtasks(world=env.world)
+                agent.all_done()
+
+            # Saving info
+            bag.add_status(cur_time=info['t'], real_agents=real_agents)
+
 if __name__ == '__main__':
     arglist = parse_arguments()
     if arglist.play:
@@ -171,6 +250,12 @@ if __name__ == '__main__':
         env.reset()
         game = GamePlay(env.filename, env.world, env.sim_agents,arglist.rs1,arglist.rs2)
         game.on_execute()
+    elif arglist.dql:
+        model_types = [arglist.model1, arglist.model2, arglist.model3, arglist.model4]
+        assert len(list(filter(lambda x: x is not None,
+            model_types))) == arglist.num_agents, "num_agents should match the number of models specified"
+        fix_seed(seed=arglist.seed)
+        dqlMainLoop(arglist)
     else:
         model_types = [arglist.model1, arglist.model2, arglist.model3, arglist.model4]
         assert len(list(filter(lambda x: x is not None,
