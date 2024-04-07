@@ -27,7 +27,7 @@ AgentRepr = namedtuple("AgentRepr", "name location holding")
 COLORS = ['blue', 'magenta', 'yellow', 'green']
 
 
-class RealAgent:
+class RealDQLAgent:
     """Real Agent object that performs task inference and plans."""
 
     def __init__(self, arglist, name, id_color, recipes):
@@ -417,7 +417,7 @@ class RealAgent:
             self.is_subtask_complete = lambda w: len(w.get_all_object_locs(obj=self.goal_obj)) > self.cur_obj_count
 
 
-class SimAgent:
+class SimDQLAgent:
     """Simulation agent used in the environment object."""
 
     def __init__(self, name, id_color, location):

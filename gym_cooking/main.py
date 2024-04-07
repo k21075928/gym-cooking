@@ -176,72 +176,31 @@ def main_loop(arglist):
             bag.add_status(cur_time=info['t'], real_agents=real_agents)
 
 
-
+from DQL.dqlmain import DQLMain
 def dqlMainLoop(arglist):
     """The main loop for running experiments."""
     print("Initializing environment and agents.")
     env = gym.envs.make("gym_cooking:overcookedEnv-v0", arglist=arglist)
     obs = env.reset()
-    if arglist.rs1 or arglist.rs2:
-        bag = Bag(arglist=arglist, filename=env.filename)
-        bag.set_recipe(recipe_subtasks=env.all_subtasks)
-        while env.alive():  # Keep running until the environment is done
+
+    bag = Bag(arglist=arglist, filename=env.filename)
+    bag.set_recipe(recipe_subtasks=env.all_subtasks)
+    real_agents = initialize_agents(arglist=arglist)
+
+    main = DQLMain(env=env, arglist=arglist, dqlAgents=real_agents).train()
             
-            real_agents = initialize_agents(arglist=arglist)
+    bag.get_delivered(env.delivered)
+    if arglist.rs2:
+        bag.get_score(env.game.score)
 
-            # Info bag for saving pkl files
-            
-            
-            env.isdone=False
-            while not env.isdone and env.alive():
-                action_dict = {}
+    # Saving final information before saving pkl file
+    bag.set_collisions(collisions=env.collisions)
+    bag.set_termination(termination_info=env.termination_info,
+            successful=env.successful)
+        
 
-                for agent in real_agents:
-                    action = agent.select_action(obs=env)
-                    action_dict[agent.name] = action
 
-                obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
 
-                # Agents
-                for agent in real_agents:
-                    agent.refresh_subtasks(world=env.world)
-                    agent.all_done()
-                    
-
-                # Saving info
-                
-        bag.get_delivered(env.delivered)
-        if arglist.rs2:
-            bag.get_score(env.game.score)
-
-        # Saving final information before saving pkl file
-        bag.set_collisions(collisions=env.collisions)
-        bag.set_termination(termination_info=env.termination_info,
-                successful=env.successful)
-    else:
-
-        # game = GameVisualize(env)
-        real_agents = initialize_agents(arglist=arglist)
-        # Info bag for saving pkl files
-        bag = Bag(arglist=arglist, filename=env.filename)
-        bag.set_recipe(recipe_subtasks=env.all_subtasks)
-        delivered=[]
-        while not env.done() :
-            action_dict = {}
-
-            for agent in real_agents:
-                action = agent.select_action(obs=obs)
-                action_dict[agent.name] = action
-
-            obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
-
-            # Agents
-            for agent in real_agents:
-                agent.refresh_subtasks(world=env.world)
-                agent.all_done()
-
-            # Saving info
-            bag.add_status(cur_time=info['t'], real_agents=real_agents)
 
 if __name__ == '__main__':
     arglist = parse_arguments()

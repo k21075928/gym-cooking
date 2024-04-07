@@ -447,48 +447,44 @@ class OvercookedEnvironment(gym.Env):
     def get_agent_names(self):
         return [agent.name for agent in self.sim_agents]
 
-    def find_best_recipe(self,world):
-        plateCounter=0
-        tomatoCounter=0
-        lettuceCounter=0
-        onionCounter=0
-        chickenCounter=0
-        recipes =[]
-        for obj in world.get_object_list():
+    def find_best_recipe(self, env):
+        object_counts = {
+            "Plate": 0,
+            "Tomato": 0,
+            "Lettuce": 0,
+            "Onion": 0,
+            "Chicken": 0
+        }
+        recipes = []
+
+        for obj in self.world.get_object_list():
             if isinstance(obj, Object):
-                if obj.contains("Plate"):
-                    plateCounter+=1
-                if obj.contains("Tomato"):
-                    tomatoCounter+=1
-                if obj.contains("Lettuce"):
-                    lettuceCounter+=1
-                if obj.contains("Onion"):
-                    onionCounter+=1
-                if obj.contains("Chicken"):
-                    chickenCounter+=1
-        if chickenCounter and plateCounter and tomatoCounter and lettuceCounter:
-            recipes.append(ChickenSalad())
-        elif onionCounter and plateCounter and tomatoCounter and lettuceCounter:
-            recipes.append(OnionSalad())
-        elif chickenCounter and plateCounter and tomatoCounter:
-            recipes.append(TomatoChicken())
-        elif chickenCounter and plateCounter and lettuceCounter:
-            recipes.append(LettuceChicken())
-        elif onionCounter and plateCounter and tomatoCounter:
-            recipes.append(TomatoOnion())
-        elif onionCounter and plateCounter and lettuceCounter:
-            recipes.append(OnionLettuce())
-        elif  plateCounter and tomatoCounter and lettuceCounter:
-            recipes.append(Salad())
-        elif plateCounter and chickenCounter:
-            recipes.append(SimpleChicken())
-        elif plateCounter and tomatoCounter:
-            recipes.append(SimpleTomato())
-        elif plateCounter and lettuceCounter:
-            recipes.append(SimpleLettuce())
-        elif plateCounter and onionCounter:
-            recipes.append(SimpleOnion())
-        
+                for object_type in object_counts.keys():
+                    if obj.contains(object_type):
+                        object_counts[object_type] += 1
+
+        recipe_conditions = [
+            (["Chicken", "Plate", "Tomato", "Lettuce"], ChickenSalad, 30),
+            (["Onion", "Plate", "Tomato", "Lettuce"], OnionSalad, 30),
+            (["Chicken", "Plate", "Tomato"], TomatoChicken, 20),
+            (["Chicken", "Plate", "Lettuce"], LettuceChicken, 20),
+            (["Onion", "Plate", "Tomato"], TomatoOnion, 20),
+            (["Onion", "Plate", "Lettuce"], OnionLettuce, 20),
+            (["Plate", "Tomato", "Lettuce"], Salad, 20),
+            (["Plate", "Chicken"], SimpleChicken, 0),
+            (["Plate", "Tomato"], SimpleTomato, 0),
+            (["Plate", "Lettuce"], SimpleLettuce, 0),
+            (["Plate", "Onion"], SimpleOnion, 0)
+        ]
+
+        for condition, recipe, min_health_time in recipe_conditions:
+            if all(object_counts[object_type] > 0 for object_type in condition) and (self.game.get_health() > min_health_time or self.game.get_time() > min_health_time):
+                recipes.append(recipe())
+
+        if not recipes:
+            self.refreshRecipe = True
+
+        print(recipes)
         return recipes
     
     def run_recipes(self):
@@ -696,20 +692,7 @@ class OvercookedEnvironment(gym.Env):
         self.world.remove(obj)
         delivery.release()
         self.reward += reward
-        # if self.plateLocationInitial is not None:
-        #     for location in self.plateLocationInitial:
-        #         if self.world.is_occupied(location):
-        #             return
-        #         else:
-        #             self.world.remove(self.world.get_counter_at(location, None))
-        #             counter = Counter(location=location)
-        #             counter.color='blue'
-        #             obj = Object(location,contents=RepToClass['p']())
-        #             counter.acquire(obj=obj)
-        #             self.world.insert(obj=counter)
-        #             self.world.insert(obj=obj)
-        #             self.has_state_changed_due_to_ingredient_respawn = True
-        #             return
+
 
     def cache_distances(self):
         """Saving distances between world objects."""
