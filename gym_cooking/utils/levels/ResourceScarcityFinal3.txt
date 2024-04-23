@@ -1,0 +1,18 @@
+-tpc-s-
+-   - *
+-ol--/-
+
+ChickenSalad
+OnionSalad
+TomatoChicken
+LettuceChicken
+TomatoOnion
+OnionLettuce
+Salad
+SimpleChicken
+SimpleTomato
+SimpleLettuce
+SimpleOnion
+
+1 1
+5 1

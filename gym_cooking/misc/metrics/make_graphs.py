@@ -29,29 +29,25 @@ models = [
        "_model1-greedy_model2-greedy",
     ]
 model_key = {
-    "_model1-bd_model2-bd": "BD (ours)",
+    "_model1-bd_model2-bd": "BD ",
     "_model1-up_model2-up": "UP",
     "_model1-fb_model2-fb": "FB",
     "_model1-dc_model2-dc": "D&C",
     "_model1-greedy_model2-greedy": "Greedy",
 }
 maps = [
-        "full-divider",
-        "open-divider",
-        "partial-divider"
+        "ResourceScarcityFinal1",
+        "ResourceScarcityFinal2",
+        "ResourceScarcityFinal3"
         ]
 seeds = range(1,10)
 agents = ['agent-1', 'agent-2', 'agent-3', 'agent-4']
 agents2_optimal = {
-    "open-divider": {"tomato": 15, "tl": 25, "salad": 24},
-    "partial-divider": {"tomato": 17, "tl": 31, "salad": 21},
-    "full-divider": {"tomato": 17, "tl": 31, "salad": 21}
+    "ResourceScarcityFinal1": {"ChickenSalad": None, "OnionSalad": None, "TomatoChicken": None, "LettuceChicken": None, "TomatoOnion": None, "OnionLettuce": None, "Salad": None, "SimpleChicken": None, "SimpleTomato": None, "SimpleLettuce": None, "SimpleOnion": None},
+    "ResourceScarcityFinal2": {"ChickenSalad": None, "OnionSalad": None, "TomatoChicken": None, "LettuceChicken": None, "TomatoOnion": None, "OnionLettuce": None, "Salad": None, "SimpleChicken": None, "SimpleTomato": None, "SimpleLettuce": None, "SimpleOnion": None},
+    "ResourceScarcityFinal3": {"ChickenSalad": None, "OnionSalad": None, "TomatoChicken": None, "LettuceChicken": None, "TomatoOnion": None, "OnionLettuce": None, "Salad": None, "SimpleChicken": None, "SimpleTomato": None, "SimpleLettuce": None, "SimpleOnion": None}
 }
-agents3_optimal = {
-    "open-divider": {"tomato": 12, "tl": 22, "salad": 15},
-    "partial-divider": {"tomato": 12, "tl": 22, "salad": 16},
-    "full-divider": {"tomato": 13, "tl": 24, "salad": 19}
-}
+
 time_steps_optimal = {2: agents2_optimal, 3: agents3_optimal}
 
 ylims = {
@@ -84,6 +80,7 @@ def parse_arguments():
 def run_main():
     #path_pickles = '/Users/custom/path/to/pickles'
     path_pickles = os.path.join(os.getcwd(), 'pickles')
+    print('loading data from', path_pickles)
     #path_save = '/Users/custom/path/to/save/to'
     path_save = os.path.join(os.getcwd(), 'graphs_agents{}'.format(arglist.num_agents))
     if not os.path.exists(path_save):

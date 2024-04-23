@@ -1,0 +1,19 @@
+-p-c-
+/ - t
+s - o
+-*-l-
+
+ChickenSalad
+OnionSalad
+TomatoChicken
+LettuceChicken
+TomatoOnion
+OnionLettuce
+Salad
+SimpleChicken
+SimpleTomato
+SimpleLettuce
+SimpleOnion
+
+1 1
+3 1

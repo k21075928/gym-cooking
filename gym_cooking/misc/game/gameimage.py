@@ -7,8 +7,8 @@ from misc.game.game import Game
 
 
 class GameImage(Game):
-    def __init__(self, filename, world, sim_agents, rs1, rs2, record=False):
-        Game.__init__(self, world, sim_agents, rs1, rs2)
+    def __init__(self, filename, world, sim_agents,arglist =None, rs1=False, rs2=False, record=False):
+        Game.__init__(self, world, sim_agents, rs1, rs2, arglist=arglist)
         self.base_dir = 'misc/game/record/{}/Trial_'.format(filename)
         self.record = record
         self.game_record_dir = self.get_unique_dir()

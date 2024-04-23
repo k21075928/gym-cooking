@@ -20,6 +20,8 @@ class GamePlay(Game):
         self.filename = filename 
         self.steps = 0
         self.save_dir = 'misc/game/screenshots'
+        self.item_refresh_rate = {"Plate": 10, "Lettuce": 15, "Tomato": 10, "Onion": 25, "Chicken": 30}
+        self.item_delivery_timer = {item: rate for item, rate in self.item_refresh_rate.items()}
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
         if self.rs1 or self.rs2:
@@ -54,44 +56,33 @@ class GamePlay(Game):
                 self.gridsquares.append(gridsquare)
                 self.gridsquare_types[name].add(gridsquare.location)
 
-    def refresh(self,item):             
-        if item =="t" and self.tomatoLocationInitial is not None:
-            for location in self.tomatoLocationInitial:
-                if self.world.is_occupied(location):
-                    return
-                else:
-                    obj = Object(location,contents=RepToClass["t"]())
-                    self.world.insert(obj=obj)
-        if item =="o" and  self.onionLocationInitial is not None:
-            for location in self.onionLocationInitial:
-                if self.world.is_occupied(location):
-                    return
-                else:
-                    obj = Object(location,contents=RepToClass["o"]())
-                    self.world.insert(obj=obj)
-        if item =="p" and  self.plateLocationInitial is not None:
-            for location in self.plateLocationInitial:
-                if self.world.is_occupied(location):
-                    return
-                else:
-                    obj = Object(location,contents=RepToClass["p"]())
-                    self.world.insert(obj=obj)
-        if item =="l" and  self.lettuceLocationInitial is not None:
-            for location in self.lettuceLocationInitial:
-                if self.world.is_occupied(location):
-                    return
-                else:
-                    obj = Object(location,contents=RepToClass["l"]())
-                    self.world.insert(obj=obj)
-        if item =="c" and  self.chickenLocationInitial is not None:
-            for location in self.chickenLocationInitial:
-                if self.world.is_occupied(location):
-                    return
-                else:
-                    obj = Object(location,contents=RepToClass["c"]())
-                    self.world.insert(obj=obj)
-        return
+    def refresh(self, item):
+        item_initial_locations = {
+            "t": self.tomatoLocationInitial,
+            "o": self.onionLocationInitial,
+            "p": self.plateLocationInitial,
+            "l": self.lettuceLocationInitial,
+            "c": self.chickenLocationInitial
+        }
 
+        if item_initial_locations[item] is not None:
+            for location in item_initial_locations[item]:
+                if self.world.is_occupied(location):
+                    return
+                else:
+                    self.world.remove(self.world.get_counter_at(location))
+                    counter = Counter(location=location)
+                    obj = Object(location, contents=RepToClass[item]())
+                    counter.acquire(obj=obj)
+                    self.world.insert(obj=counter)
+                    self.world.insert(obj=obj)
+                    self.has_state_changed_due_to_ingredient_respawn = True
+        return
+    def refreshAll(self):
+        for item, rate in self.item_refresh_rate.items():
+            refresh = self.steps % rate
+            if refresh == 0:
+                self.refresh(item[0].lower())
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self._running = False
@@ -99,16 +90,7 @@ class GamePlay(Game):
             if self.rs1 or self.rs2:
                 self.steps+=1 
                 self.decrease_health()
-                if (self.steps % 30==0):
-                    self.refresh("t")
-                if (self.steps % 30==0):
-                    self.refresh("p")
-                if (self.steps % 30==0):
-                    self.refresh("l")
-                if (self.steps % 30==0):
-                    self.refresh("o")
-                if (self.steps % 50==0):
-                    self.refresh("c")
+                self.refreshAll()
             # Save current image
             if event.key == pygame.K_RETURN:
                 image_name = '{}_{}.png'.format(self.filename, datetime.now().strftime('%m-%d-%y_%H-%M-%S'))
@@ -119,22 +101,22 @@ class GamePlay(Game):
             # Switch current agent
             if pygame.key.name(event.key) in "1234":
                 try:
-                    self.current_agent = self.sim_agents[int(pygame.key.name(event.key))-1]
+                    self.count_agent = self.sim_agents[int(pygame.key.name(event.key))-1]
                 except:
                     pass
                 return
 
             # Control current agent
-            x, y = self.current_agent.location
+            x, y = self.count_agent.location
             objD =None
             if event.key in KeyToTuple.keys():
                 action = KeyToTuple[event.key]
-                self.current_agent.action = action
-                objD = interact(self.current_agent, self.world)
-                if objD is not None and self.rs1 or self.rs2:
+                self.count_agent.action = action
+                objD = interact(self.count_agent, self.world)
+                if objD is not None and (self.rs1 or self.rs2):
                     self.isdelivered(objD)
                     objD = None
-                if objD is not None and self.rs1==False or self.rs2 ==False:
+                if objD is not None and (self.rs1==False or self.rs2 ==False):
                     self.isdelivered(objD)
                     objD = None
                     
@@ -142,21 +124,36 @@ class GamePlay(Game):
         if self.rs2 and self.steps> 100:
             print("Terminating because timelimit is over "+ str(self.steps)+" steps")
             self._running = False
-            
-        if self.health ==0 or self.health<0:
-            print("Terminating because your guests starved to death at "+ str(self.steps)+" steps")
-            self._running = False
+        if self.rs1:
+            if self.health ==0 or self.health<0:
+                print("Terminating because your guests starved to death at "+ str(self.steps)+" steps")
+                self._running = False
 
     def isdelivered(self,obj):
-        if self.rs1==False or self.rs2 == False:
+        if (self.rs1==False and self.rs2 == False):
             self._running = False
         score = obj.full_name.count("-")
         meat = obj.full_name.count("Chicken")
-        if meat>0:
-            self.increase_health(20*score+50)
-        else:
-            self.increase_health(20*score)
-        self.world.remove(obj)
+        reward = 0
+        if self.rs1 or self.rs2:
+            if self.rs1:
+                if meat>0:
+                    self.increase_health(5*score+5)
+                    reward = score +3
+                else:
+                    self.increase_health(5*score)
+                    reward = score
+            if self.rs2:
+                """Make rewards exponential increase instead of Linear increase - To value higher scores for more complex recipes"""
+                if meat>0:
+                    self.increase_score(round(10 * (score ** 1.5) + 10))  
+                    reward = score + 3
+                else:
+                    self.increase_score(round(10 * (score ** 1.5)))  
+                    reward = score
+            delivery = self.world.get_counter_at(obj.location)
+            self.world.remove(obj)
+            delivery.release()
         
              
 

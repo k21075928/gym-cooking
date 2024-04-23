@@ -341,30 +341,30 @@ class E2E_BRTDP:
                     len(self.repr_to_env_dict[h].world.get_all_object_locs(self.goal_obj)))
 
 
-            if self.removed_object is not None and self.removed_object == self.goal_obj:
-                self.is_subtask_complete = lambda w: self.has_more_obj(
-                        len(w.get_all_object_locs(self.goal_obj)) + 1)
+            # Check if subtask is Chop or Cook
+            if isinstance(subtask, Chop) or isinstance(subtask, Cook):
+                # Define a function that checks if there is a corresponding chopped or cooked object
+                self.is_object_processed = lambda w: any(isinstance(o, Object) and o.name.contains(subtask.args) and o.name.contains("Chopped") for o in w.get_object_list()) if isinstance(subtask, Chop) else any( isinstance(o, Object) and o.name.contains("Cooked") for o in w.get_object_list())
+                # print(o.name for o in env.world.get_object_list())
+                # Modify is_subtask_complete to use this function
+                self.is_subtask_complete = lambda w: self.is_object_processed(w) or any(isinstance(o, Object) and o.contains(subtask.args) and (o.contains("Chopped") or o.contains("Cooked")) for o in w.get_object_list())
             else:
-                self.is_subtask_complete = lambda w: self.has_more_obj(
-                        len(w.get_all_object_locs(self.goal_obj)))
-            
-            
-            
-            # print(subtask)
-            # # Check if subtask is Chop or Cook
-            # if isinstance(subtask, Chop) or isinstance(subtask, Cook):
-            #     # Define a function that checks if there is a corresponding chopped or cooked object
-            #     self.is_object_processed = lambda w: any(isinstance(o, Object) and o.name.contains(subtask.args) and o.name.contains("Chopped") for o in w.get_object_list()) if isinstance(subtask, Chop) else any( isinstance(o, Object) and o.name.contains("Cooked") for o in w.get_object_list())
-            #     # print(o.name for o in env.world.get_object_list())
-            #     # Modify is_subtask_complete to use this function
-            #     self.is_subtask_complete = lambda w: self.is_object_processed(w) or any(isinstance(o, Object) and o.contains(subtask.args) and (o.contains("Chopped") or o.contains("Cooked")) for o in w.get_object_list())
+                if self.removed_object is not None and self.removed_object == self.goal_obj:
+                    self.is_subtask_complete = lambda w: self.has_more_obj(
+                            len(w.get_all_object_locs(self.goal_obj)) + 1)
+                else:
+                    self.is_subtask_complete = lambda w: self.has_more_obj(
+                            len(w.get_all_object_locs(self.goal_obj)))
+            # if self.removed_object is not None and self.removed_object == self.goal_obj:
+            #     self.is_subtask_complete = lambda w: self.has_more_obj(
+            #             len(w.get_all_object_locs(self.goal_obj)) + 1)
             # else:
-            #     if self.removed_object is not None and self.removed_object == self.goal_obj:
-            #         self.is_subtask_complete = lambda w: self.has_more_obj(
-            #                 len(w.get_all_object_locs(self.goal_obj)) + 1)
-            #     else:
-            #         self.is_subtask_complete = lambda w: self.has_more_obj(
-            #                 len(w.get_all_object_locs(self.goal_obj)))
+            #     self.is_subtask_complete = lambda w: self.has_more_obj(
+            #             len(w.get_all_object_locs(self.goal_obj)))
+            
+            
+            
+            
         
 
     def _configure_planner_space(self, subtask_agent_names):

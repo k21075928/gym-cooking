@@ -18,12 +18,12 @@ def get_image(path):
 
 
 class Game:
-    def __init__(self, world, sim_agents,rs1,rs2, play=False):
+    def __init__(self, world, sim_agents,rs1,rs2,arglist=None, play=False):
         self.mapGen = world
         self._running = True
         self.world = world
         self.sim_agents = sim_agents
-        self.current_agent = self.sim_agents[0]
+        self.count_agent = self.sim_agents[0]
         self.play = play
         self.rs1=rs1
         self.rs2=rs2
@@ -40,11 +40,18 @@ class Game:
         self.holding_container_size = tuple((self.container_scale * np.asarray(self.holding_size)).astype(int))
         self.UpdateDispenserCounter= 0
         self.item_delivery_timer = {}
+        self.dqlmap=False
         if self.rs2:
-            self.timer=60
+            if arglist.time:
+                self.timer=arglist.time
+            else:
+                self.timer=60
             self.score=0
         if self.rs1:
-            self.health= 35
+            if arglist.health:
+                self.health=arglist.health
+            else:
+                self.health= 100
 
 
     def on_init(self):
@@ -159,7 +166,7 @@ class Game:
         if self.rs1:
             health = self.font.render("health: "+str(self.health), True, (0, 0, 0))
             self.screen.blit(health, (0,0))
-            if self.item_delivery_timer:
+            if self.item_delivery_timer and not self.dqlmap:
                 y_offset = 15
                 delivery_title = self.font.render("Delivery", True, (0, 0, 0))
                 self.screen.blit(delivery_title, (0, y_offset))
@@ -174,7 +181,7 @@ class Game:
             self.screen.blit(timer, (0,0))
             score = self.font.render("score: "+str(self.score), True, (0, 0, 0))
             self.screen.blit(score, (0,15))
-            if self.item_delivery_timer:
+            if self.item_delivery_timer  and not self.dqlmap:
                 y_offset = 30
                 delivery_title = self.font.render("Delivery", True, (0, 0, 0))
                 self.screen.blit(delivery_title, (0, y_offset))
@@ -210,8 +217,11 @@ class Game:
 
     def draw(self, path, size, location):
         image_path = '{}/{}.png'.format(graphics_dir, path)
-        image = pygame.transform.scale(get_image(image_path), size)
-        self.screen.blit(image, location)
+        try:
+            image = pygame.transform.scale(get_image(image_path), size)
+            self.screen.blit(image, location)
+        except pygame.error:
+            print(f"Image {image_path} not found, skipping.")
 
 
     def draw_agent(self, agent):

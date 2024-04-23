@@ -73,7 +73,7 @@ class STRIPSWorld:
             for state_path in all_state_paths:
                 action_path = [graph[state_path[i]][state_path[i+1]]['obj'] for i in range(len(state_path)-1)]
                 union_action_path = union_action_path | set(action_path)
-            print('all tasks for recipe {}: {}\n'.format(recipe, ', '.join([str(a) for a in union_action_path])))
+            # print('all tasks for recipe {}: {}\n'.format(recipe, ', '.join([str(a) for a in union_action_path])))
             action_paths.append(union_action_path)
 
         return action_paths

@@ -6,11 +6,9 @@ from recipe_planner.recipe import *
 
 # Delegation planning
 from delegation_planner.bayesian_delegator import BayesianDelegator
-
 # Navigation planner
 from navigation_planner.planners.e2e_brtdp import E2E_BRTDP
 import navigation_planner.utils as nav_utils
-from A_Q_Deep.qlearning import Qlearning, DeepQlearning
 # Other core modules
 from utils.core import Counter, Cutboard, Food, Plate, Object
 from utils.utils import agent_settings
@@ -56,6 +54,7 @@ class RealAgent:
         self.is_subtask_complete = lambda w: False
         self.beta = arglist.beta
         self.none_action_prob = 0.5
+        self.actions_available = [(0, 1), (0, -1), (-1, 0), (1, 0)]#
 
         
         if self.model_type == "up":
@@ -92,10 +91,8 @@ class RealAgent:
         return self.holding.full_name
 
     def select_action(self, obs):
-        if (obs.delivered != self.completeRecipes) or self.refreshRecipe:
+        if  (obs.delivered != self.completeRecipes) or self.refreshRecipe:
             self.refreshRecipe=False
-            for x in range(100):
-                print("Hello",x)
             self.completeRecipes = obs.delivered
             self.signal_reset_delegator = True
             self.all_done()
@@ -111,26 +108,29 @@ class RealAgent:
             self.incomplete_subtasks = []
             self.signal_reset_delegator = False
             self.is_subtask_complete = lambda w: False
-
+        
 
         """Return best next action for this agent given observations."""
         sim_agent = list(filter(lambda x: x.name == self.name, obs.sim_agents))[0]
         self.location = sim_agent.location
         self.holding = sim_agent.holding
         self.action = sim_agent.action
-
+        
         if obs.t == 0 or self.resetFlag:
             self.resetFlag = False
             self.setup_subtasks(env=obs)
-            print(obs.world.print_objects())
         # obs.display()
 
         # Select subtask based on Bayesian Delegation.
         self.update_subtasks(env=obs)
+        
         self.new_subtask, self.new_subtask_agent_names = self.delegator.select_subtask(
                 agent_name=self.name)
+        
         self.plan(obs)
         return self.action
+    def get_current_subtask(self):
+        return self.subtask
 
 
     def find_best_recipe(self, env):
@@ -163,30 +163,16 @@ class RealAgent:
             (["Plate", "Lettuce"], SimpleLettuce, 0),
             (["Plate", "Onion"], SimpleOnion, 0)
         ]
-
+        
         for condition, recipe, min_health_time in recipe_conditions:
             if all(object_counts[object_type] > 0 for object_type in condition) and (env.game.get_health() > min_health_time or env.game.get_time() > min_health_time):
                 recipes.append(recipe())
 
         if not recipes:
             self.refreshRecipe = True
+            return []
+        return [recipes[0]]
 
-        print(recipes)
-        return recipes
-
-    
-    # def load_recipes(self, level):
-    #     with open('utils/levels/{}.txt'.format(level), 'r') as file:
-    #         # Mark the phases of reading.
-    #         recipesNames=[]
-    #         phase = 1
-    #         for line in file:
-    #             line = line.strip('\n')
-    #             if line == '':
-    #                 phase += 1
-    #             elif phase == 2:
-    #                 recipesNames.append(globals()[line]())
-    #         return recipesNames
         
     def get_subtasks(self, env):
         if self.rs1 or self.rs2:
@@ -207,26 +193,11 @@ class RealAgent:
         # pg = recipe_utils.make_predicate_graph(self.sw.initial, recipe_paths[i])
         # ag = recipe_utils.make_action_graph(self.sw.initial, recipe_paths[i])
         return all_subtasks
-
+        
     def setup_subtasks(self, env):
         """Initializing subtasks and subtask allocator, Bayesian Delegation."""
         self.incomplete_subtasks = self.get_subtasks(env=env)
-        if self.model_type == "ql":
-            self.delegator = Qlearning(
-            agent_name=self.name,
-                    all_agent_names=env.get_agent_names(),
-                    model_type=self.model_type,
-                    planner=self.planner,
-                    none_action_prob=self.none_action_prob)
-        elif self.model_type == "dql":
-            self.delegator = DeepQlearning(
-                agent_name=self.name,
-                    all_agent_names=env.get_agent_names(),
-                    model_type=self.model_type,
-                    planner=self.planner,
-                    none_action_prob=self.none_action_prob)
-        else:
-            self.delegator = BayesianDelegator(
+        self.delegator = BayesianDelegator(
                     agent_name=self.name,
                     all_agent_names=env.get_agent_names(),
                     model_type=self.model_type,

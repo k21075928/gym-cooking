@@ -11,9 +11,37 @@ import scipy as sp
 import numpy as np
 import copy
 
+# Recipe planning
+from recipe_planner.stripsworld import STRIPSWorld
+import recipe_planner.utils as recipe_utils
+from recipe_planner.utils import *
+from recipe_planner.recipe import *
+
+
+# Navigation planner
+from navigation_planner.planners.e2e_brtdp import E2E_BRTDP
+import navigation_planner.utils as nav_utils
+# Other core modules
+from utils.core import Counter, Cutboard, Food, Plate, Object
+from utils.utils import agent_settings
+
+import numpy as np
+import copy
+from termcolor import colored as color
+from collections import namedtuple
+import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+
+AgentRepr = namedtuple("AgentRepr", "name location holding")
+
+# Colors for agents.
+COLORS = ['blue', 'magenta', 'yellow', 'green']
+import random
+from collections import deque
 SubtaskAllocation = namedtuple("SubtaskAllocation", "subtask subtask_agent_names")
-
-
 class BayesianDelegator(Delegator):
 
     def __init__(self, agent_name, all_agent_names,
@@ -409,18 +437,7 @@ class BayesianDelegator(Delegator):
             subtask_allocs.append(subtask_alloc)
         return SubtaskAllocDistribution(subtask_allocs)
     
-    def add_resourceScarcity_subtasks(self):
-        """Return the entire distribution of divide & conquer subtask allocations.
-        i.e. no subtask is shared between two agents.
 
-        If there are no subtasks, just make an empty distribution and return."""
-        subtask_allocs = []
-
-        subtasks = self.incomplete_subtasks + [None for _ in range(len(self.all_agent_names) - 1)]
-        for p in permutations(subtasks, len(self.all_agent_names)):
-            subtask_alloc = [SubtaskAllocation(subtask=p[i], subtask_agent_names=(self.all_agent_names[i],)) for i in range(len(self.all_agent_names))]
-            subtask_allocs.append(subtask_alloc)
-        return SubtaskAllocDistribution(subtask_allocs)
     
     def select_subtask(self, agent_name):
         """Return subtask and subtask_agent_names for agent with agent_name

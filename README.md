@@ -40,11 +40,11 @@ You can use this bibtex if you would like to cite this work (Wu and Wang et al.,
 ## Installation
 
 You can install the dependencies with `pip3`:
+
 ```
 git clone https://github.com/rosewang2008/gym-cooking.git
 cd gym-cooking
 pip3 install -e .
-pip3 install -r https://raw.githubusercontent.com/huggingface/deep-rl-class/main/notebooks/unit2/requirements-unit2.txt
 ```
 
 All experiments have been run with `python3`! 

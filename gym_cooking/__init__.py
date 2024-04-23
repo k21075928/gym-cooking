@@ -6,5 +6,5 @@ register(
         )
 register(
         id="DQLovercookedEnv-v0",
-        entry_point="gym_cooking.DQL:DQLOvercookedEnvironment",
+        entry_point="gym_cooking.envs:DQLOvercookedEnvironment",
         )

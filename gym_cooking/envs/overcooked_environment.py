@@ -35,6 +35,7 @@ class OvercookedEnvironment(gym.Env):
     """Environment object for Overcooked."""
 
     def __init__(self, arglist):
+        self.predict=False
         self.Initalworld = None
         self.arglist = arglist
         self.t = 0
@@ -44,7 +45,7 @@ class OvercookedEnvironment(gym.Env):
         self.reward=0
         self.rsflag = False
         self.delivered=[]
-
+        self.game = None
         # For visualizing episode.
         self.rep = []
 
@@ -52,6 +53,8 @@ class OvercookedEnvironment(gym.Env):
         self.collisions = []
         self.termination_info = ""
         self.successful = False
+        self.x = 0
+        self.y = 0
 
         self.plateLocationInitial= []
         self.tomatoLocationInitial= []
@@ -59,7 +62,13 @@ class OvercookedEnvironment(gym.Env):
         self.onionLocationInitial= []
         self.chickenLocationInitial= []
         self.has_state_changed_due_to_ingredient_respawn = False
-        self.item_refresh_rate = {"Plate": 10, "Lettuce": 15, "Tomato": 20, "Onion": 25, "Chicken": 30}
+        self.item_refresh_rate = {
+            "Plate": self.arglist.plate_refresh_time,
+            "Lettuce": self.arglist.lettuce_refresh_time,
+            "Tomato": self.arglist.tomato_refresh_time,
+            "Onion": self.arglist.onion_refresh_time,
+            "Chicken": self.arglist.chicken_refresh_time
+            }
         self.item_delivery_timer = {item: rate for item, rate in self.item_refresh_rate.items()}
 
         
@@ -143,6 +152,14 @@ class OvercookedEnvironment(gym.Env):
             self.filename+="_resourceScarcityVersion1"
         if self.arglist.rs2:
             self.filename+="_resourceScarcityVersion2"
+        if self.arglist.dql:
+            self.filename+="_DQLVersion1"
+            if self.arglist.unlimited:
+                self.filename += "_Unlimited"
+            else:
+                self.filename += "_Training_{}".format(self.arglist.num_training)
+        if self.predict:
+            self.filename+="_PredictVersion"
 
     def load_level(self, level, num_agents):
         x = 0
@@ -178,8 +195,10 @@ class OvercookedEnvironment(gym.Env):
                     y += 1
                 # Phase 2: Read in recipe list.
                 elif phase == 2:
-                    self.recipes = self.find_best_recipe(self.world)
-
+                    if self.rs1 or self.rs2:
+                        self.recipes=[]
+                    else:
+                        self.recipes.append(globals()[line]())
                 # Phase 3: Read in agent locations (up to num_agents).
                 elif phase == 3:
                     if len(self.sim_agents) < num_agents:
@@ -194,7 +213,10 @@ class OvercookedEnvironment(gym.Env):
         self.world.width = x+1
         self.world.height = y
         self.world.perimeter = 2*(self.world.width + self.world.height)
+        self.x = x+1
+        self.y = y
 
+    
 
     def reset(self):
         self.world = World(arglist=self.arglist)
@@ -211,22 +233,12 @@ class OvercookedEnvironment(gym.Env):
         self.rsflag = False
         self.delivered =[]
         self.isdone = False
-        # sim_state = copy.copy(self)
-        # obj1 = Object((2,3),[Plate()])
-        # obj2 = Object((2,3),[Tomato()])
-        # obj2.chop()   
-        # obj3 = Object((2,3),[Lettuce()])
-        # obj3.chop()
-        # obj4 = Object((2,3),[Chicken()])
-        # obj4.cook()
-        # obj1.merge(obj4)
-        # obj2.merge(obj3)
-        # obj1.merge(obj2)
-        # self.world.insert(obj=obj1)
+
         for obj in self.Initalworld.get_object_list():
             print(obj.name)
         # For visualizing episode.
         self.rep = []
+        
 
         # For tracking data during an episode.
         self.collisions = []
@@ -237,7 +249,6 @@ class OvercookedEnvironment(gym.Env):
         self.load_level(
                 level=self.arglist.level,
                 num_agents=self.arglist.num_agents)
-        self.all_subtasks = self.run_recipes()
         self.world.make_loc_to_gridsquare()
         self.world.make_reachability_graph()
         self.cache_distances()
@@ -249,10 +260,14 @@ class OvercookedEnvironment(gym.Env):
                     world=self.world,
                     sim_agents=self.sim_agents,
                     record=self.arglist.record,
-                    rs1=self.arglist.rs1,rs2=self.arglist.rs2)
+                    rs1=self.arglist.rs1,rs2=self.arglist.rs2, arglist=self.arglist)
             self.game.on_init()
+            if self.arglist.level == "ResourceScarcityDQL":
+                self.game.dqlmap=True
             if self.arglist.record:
                 self.game.save_image_obs(self.t)
+        
+        self.all_subtasks = self.run_recipes()
         return copy.copy(self)
 
     def close(self):
@@ -279,6 +294,7 @@ class OvercookedEnvironment(gym.Env):
             if self.arglist.rs1 or self.arglist.rs2:
                 self.objInit()
                 self.game.item_delivery_timer = {item: rate for item, rate in self.item_refresh_rate.items()}
+                self.recipes = self.find_best_recipe()
                 
 
         # Track internal environment info.
@@ -298,13 +314,14 @@ class OvercookedEnvironment(gym.Env):
         self.check_collisions()
         self.obs_tm1 = copy.copy(self)
 
-        
-        if  (self.arglist.rs1 or self.arglist.rs2):
+        if self.arglist.level == "ResourceScarcityDQL":
+            self.done()
+        if  (self.arglist.rs1 or self.arglist.rs2) and not self.arglist.level == "ResourceScarcityDQL":
             self.refreshAll()
         # Execute.
         self.execute_navigation()
         
-
+        print("reward happening",self._define_goal_state())
         # Visualize.
         self.display()
         self.print_agents()
@@ -315,7 +332,7 @@ class OvercookedEnvironment(gym.Env):
         new_obs = copy.copy(self)
         # Get an image observation
         image_obs = self.game.get_image_obs()
-
+        
         #reward = self.reward()
         info = {"t": self.t, "obs": new_obs,
                 "image_obs": image_obs,
@@ -324,15 +341,73 @@ class OvercookedEnvironment(gym.Env):
             return new_obs, self.reward, self.isdone, info, self.rsflag
         else:
             return new_obs, self.reward, self.isdone, info, False
-    
+    def _define_goal_state(self):
+        """Defining a goal state (termination condition on state) for subtask."""
+        subtasks = self.run_recipes()
+        reward = 0
+        self.removed_object =[]
+        for subtask in subtasks:
+            for agent in self.sim_agents:
+                if agent.holding is not None:
+                    self.removed_object = agent.holding
+            self.start_obj, self.goal_obj = nav_utils.get_subtask_obj(subtask)
+            self.subtask_action_obj = nav_utils.get_subtask_action_obj(subtask)
+            if subtask is None:
+                self.is_goal_state = lambda h: True
+
+            # Termination condition is when desired object is at a Deliver location.
+            elif isinstance(subtask, recipe.Deliver):
+                # Get current count of desired objects.
+                self.cur_obj_count = len(list(filter(lambda o: o in set(self.world.get_all_object_locs(
+                    self.subtask_action_obj)), self.world.get_object_locs(self.goal_obj, is_held=False))))
+                self.has_more_obj = lambda x: int(x) > self.cur_obj_count
+                self.is_goal_state = lambda h: self.has_more_obj(
+                    len(list(filter(lambda o: o in set(self.world.get_all_object_locs(self.subtask_action_obj)),
+                                    self.repr_to_env_dict[h].world.get_object_locs(self.goal_obj, is_held=False)))))
+
+                if self.removed_object is not None and self.removed_object == self.goal_obj:
+                    self.is_subtask_complete = lambda w: self.has_more_obj(
+                        len(list(filter(lambda o: o in set(self.world.get_all_object_locs(self.subtask_action_obj)),
+                                        w.get_object_locs(self.goal_obj, is_held=False)))) + 1)
+                else:
+                    self.is_subtask_complete = lambda w: self.has_more_obj(
+                        len(list(filter(lambda o: o in set(self.world.get_all_object_locs(self.subtask_action_obj)),
+                                        w.get_object_locs(obj=self.goal_obj, is_held=False)))))
+
+                # Check if subtask is complete and add reward
+                if self.is_subtask_complete(self.world):
+                    reward += 1
+
+            else:
+                # Get current count of desired objects.
+                self.cur_obj_count = len(self.world.get_all_object_locs(self.goal_obj))
+                # Goal state is reached when the number of desired objects has increased.
+                self.has_more_obj = lambda x: int(x) > self.cur_obj_count
+                self.is_goal_state = lambda h: self.has_more_obj(
+                    len(self.repr_to_env_dict[h].world.get_all_object_locs(self.goal_obj)))
+
+                if self.removed_object is not None and self.removed_object == self.goal_obj:
+                    self.is_subtask_complete = lambda w: self.has_more_obj(
+                        len(w.get_all_object_locs(self.goal_obj)) + 1)
+                else:
+                    self.is_subtask_complete = lambda w: self.has_more_obj(
+                        len(w.get_all_object_locs(self.goal_obj)))
+
+                # Check if subtask is complete and add reward
+                if self.is_subtask_complete(self.world):
+                    reward += 1
+
+        return reward
     def alive(self):
         if self.rs1:
             self.termination_info = "Terminating because you guest starved to death at {}".format(self.t)
-            return self.game.health>0
+            return self.game.health>0 
         if self.rs2:
             self.termination_info = "Terminating because you ran out of time {}".format(self.t)
-            return self.game.timer>0
-        
+            if self.game is not None:
+                return self.game.timer>0
+            else:
+                return True
     def refreshAll(self):
         for item, rate in self.item_refresh_rate.items():
             refresh = self.t % rate
@@ -373,6 +448,12 @@ class OvercookedEnvironment(gym.Env):
         #     self.successful = False
         #     return True
 
+        if self.t >= self.arglist.max_num_timesteps and self.arglist.max_num_timesteps:
+            self.termination_info = "Terminating because passed {} timesteps".format(
+                    self.arglist.max_num_timesteps)
+            self.successful = False
+            return True
+
         assert any([isinstance(subtask, recipe.Deliver) for subtask in self.all_subtasks]), "no delivery subtask"
 
         # Done if subtask is completed.
@@ -386,13 +467,13 @@ class OvercookedEnvironment(gym.Env):
                 if not any([gol == delivery_loc for gol in goal_obj_locs]):
                     self.termination_info = ""
                     self.successful = False
-                    self.recipes= self.find_best_recipe(self.world)
                     return False
-
+        
         self.termination_info = "Terminating because all deliveries were completed"
         self.successful = True
         return True
-
+    
+    
         # else:
         #     print("RSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
         #     if self.game.health ==0 or self.game.health<0:
@@ -426,7 +507,9 @@ class OvercookedEnvironment(gym.Env):
         #         self.successful = False
         #         return True
 
-            
+    def refreshInstant(self):
+        for item in self.item_refresh_rate.keys():
+            self.refresh(item[0].lower())
 
 
     def print_agents(self):
@@ -447,7 +530,7 @@ class OvercookedEnvironment(gym.Env):
     def get_agent_names(self):
         return [agent.name for agent in self.sim_agents]
 
-    def find_best_recipe(self, env):
+    def find_best_recipe(self):
         object_counts = {
             "Plate": 0,
             "Tomato": 0,
@@ -484,16 +567,18 @@ class OvercookedEnvironment(gym.Env):
         if not recipes:
             self.refreshRecipe = True
 
-        print(recipes)
+        print("find best",recipes)
         return recipes
     
     def run_recipes(self):
         """Returns different permutations of completing recipes."""
+        if self.rs1 or self.rs2:
+            self.recipes = self.find_best_recipe()
         self.sw = STRIPSWorld(world=self.world, recipes=self.recipes)
         # [path for recipe 1, path for recipe 2, ...] where each path is a list of actions
         subtasks = self.sw.get_subtasks(max_path_length=self.arglist.max_num_subtasks)
         all_subtasks = [subtask for path in subtasks for subtask in path]
-        print('Subtasks:', all_subtasks, '\n')
+        # print('Subtasks:', all_subtasks, '\n')
         return all_subtasks
 
     def get_AB_locs_given_objs(self, subtask, subtask_agent_names, start_obj, goal_obj, subtask_action_obj):
@@ -650,13 +735,13 @@ class OvercookedEnvironment(gym.Env):
                         agent_locations=[agent_i.location, agent_j.location])
                 self.collisions.append(collision)
 
-        print('\nexecute array is:', execute)
+        # print('\nexecute array is:', execute)
 
         # Update agents' actions if collision was detected.
         for i, agent in enumerate(self.sim_agents):
             if not execute[i]:
                 agent.action = (0, 0)
-            print("{} has action {}".format(color(agent.name, agent.color), agent.action))
+            # print("{} has action {}".format(color(agent.name, agent.color), agent.action))
 
     def execute_navigation(self):
         for agent in self.sim_agents:
@@ -672,26 +757,30 @@ class OvercookedEnvironment(gym.Env):
         score = obj.full_name.count("-")
         meat = obj.full_name.count("Chicken")
         reward = 0
-        if self.rs1:
-            if meat>0:
-                self.game.increase_health(5*score+5)
-                reward = score +3
-            else:
-                self.game.increase_health(5*score)
-                reward = score
-        if self.rs2:
-            """Make rewards exponential increase instead of Linear increase - To value higher scores for more complex recipes"""
-            if meat>0:
-                self.game.increase_score(round(10 * (score ** 1.5) + 10))  
-                reward = score + 3
-            else:
-                self.game.increase_score(round(10 * (score ** 1.5)))  
-                reward = score
-        self.delivered.append(obj.name)
-        delivery = self.world.get_counter_at(obj.location)
-        self.world.remove(obj)
-        delivery.release()
-        self.reward += reward
+        if self.rs1 or self.rs2:
+            if self.rs1:
+                if meat>0:
+                    self.game.increase_health(5*score+5)
+                    reward = score +3
+                else:
+                    self.game.increase_health(5*score)
+                    reward = score
+            if self.rs2:
+                """Make rewards exponential increase instead of Linear increase - To value higher scores for more complex recipes"""
+                if meat>0:
+                    self.game.increase_score(round(10 * (score ** 1.5) + 10))  
+                    reward = score + 3
+                else:
+                    self.game.increase_score(round(10 * (score ** 1.5)))  
+                    reward = score
+            self.delivered.append(obj.name)
+            delivery = self.world.get_counter_at(obj.location)
+            self.world.remove(obj)
+            delivery.release()
+            self.reward += reward
+            print(self.arglist.level )
+            if self.arglist.level == "ResourceScarcityDQL":
+                self.refreshInstant()
 
 
     def cache_distances(self):
