@@ -126,3 +126,12 @@ Results for homogenous teams (self-play experiments):
 
 Results for heterogeneous teams (ad-hoc experiments):
 ![heatmaps](images/heatmaps.png)
+
+### Activating Resource Scaricty Version 1
+* `--rs1` To activate Resource scarcity Version 1 - This must be called with `--record`
+
+### Activating Resource Scaricty Version 2
+* `--rs2` To activate Resource scarcity Version 2 - This must be called with `--record`
+
+### Activating Deep Q Learning Model
+* `--dql` To activate Deep Q learning agents 
