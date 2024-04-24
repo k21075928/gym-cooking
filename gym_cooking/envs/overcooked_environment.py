@@ -122,6 +122,8 @@ class OvercookedEnvironment(gym.Env):
         self.collisions = []
         self.termination_info = ""
         self.successful = False
+        if self.arglist.dql:
+            self.delivered =[]
 
         # Load world & distances.
         

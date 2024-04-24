@@ -72,7 +72,6 @@ def parse_arguments():
     parser.add_argument("--num_training", type=int, default=5000, help="Number of training episodes")
     parser.add_argument("--max_timestep", type=int, default=60, help="Maximum number of timesteps per episode")
     parser.add_argument("--unlimited", action="store_true", default=False, help="unbounded training episodes") 
-
     parser.add_argument("--record_data", action="store_true", default=False, help="Record Data") 
     return parser.parse_args()
 
@@ -142,7 +141,7 @@ def main_loop(arglist):
                         action_dict[agent.name] = action
                     obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
                     
-                    if arglist.record_date:
+                    if arglist.record_data:
                         accumulative_reward += reward
                         writer.writerow([env.t, accumulative_reward])
                     
@@ -193,12 +192,13 @@ def main_loop(arglist):
                 bag.add_status(cur_time=info['t'], real_agents=real_agents)
 
 
-                if arglist.record_date:
+                if arglist.record_data:
                     accumulative_reward += reward
                     writer.writerow([env.t, accumulative_reward])
             bag.set_collisions(collisions=env.collisions)
             bag.set_termination(termination_info=env.termination_info,
             successful=env.successful)
+            print("Delivered:", env.delivered)
 
 
 def create_csv_filename(arglist):
@@ -239,22 +239,22 @@ def dqlMainLoop(arglist):
     env.reset()
     csv_filename = create_csv_filename(arglist)
     if not arglist.rs2:
-        filename1 = "agent_1-dql-level_{}-time{}.h5".format(
+        filename1 = "agent_1-dql-level_{}-time{}_num_episodes{}_num_episodes{}.h5".format(
             arglist.level,
-            arglist.max_timestep
+            arglist.max_timestep, arglist.num_training
         )
-        filename2 = "agent_2-dql-level_{}-time{}.h5".format(
+        filename2 = "agent_2-dql-level_{}-time{}_num_episodes{}.h5".format(
             arglist.level,
-            arglist.max_timestep
+            arglist.max_timestep, arglist.num_training
         )
     else:
-        filename1 = "agent_1-dql-level_{}-time{}_ResourceScarcityVersion2.h5".format(
+        filename1 = "agent_1-dql-level_{}-time{}_num_episodes{}_ResourceScarcityVersion2.h5".format(
             arglist.level,
-            arglist.max_timestep
+            arglist.max_timestep, arglist.num_training
         )
-        filename2 = "agent_2-dql-level_{}-time{}_ResourceScarcityVersion2.h5".format(
+        filename2 = "agent_2-dql-level_{}-time{}_num_episodes{}_ResourceScarcityVersion2.h5".format(
             arglist.level,
-            arglist.max_timestep
+            arglist.max_timestep, arglist.num_training
         )
     model_file=['./DQL/DQLAgentTraining/{}'.format(filename1), './DQL/DQLAgentTraining/{}'.format(filename2)]
     dql_agents = []
@@ -287,6 +287,7 @@ def dqlMainLoop(arglist):
     else:
         print("Highest score: ", reward_total)
         print("Average Time-step", env.t)
+    print("Delivered:", env.delivered)
 
 def run_prediction(env, agents, action_histories,csv_filename, rs2=False):
     reward_total = 0

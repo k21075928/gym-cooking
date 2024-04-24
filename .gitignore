@@ -129,3 +129,4 @@ venv.bak/
 # mypy
 .mypy_cache/
 /gym_cooking/Results
+/gym_cooking/DQL/DQLAgentTraining

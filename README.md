@@ -117,3 +117,7 @@ Results for heterogeneous teams (ad-hoc experiments):
 
 ### Activating Deep Q Learning Model
 * `--dql` To activate Deep Q learning agents 
+
+### To Record Data
+* `--record_data` To activate the data recording
+* This can be access at gym_cooking\Results
