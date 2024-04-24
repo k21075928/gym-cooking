@@ -239,20 +239,20 @@ def dqlMainLoop(arglist):
     env.reset()
     csv_filename = create_csv_filename(arglist)
     if not arglist.rs2:
-        filename1 = "agent_1-dql-level_{}-time{}_num_episodes{}_num_episodes{}.h5".format(
+        filename1 = "agent_1-dql-level_{}-time{}_num_episodes_{}.h5".format(
             arglist.level,
             arglist.max_timestep, arglist.num_training
         )
-        filename2 = "agent_2-dql-level_{}-time{}_num_episodes{}.h5".format(
+        filename2 = "agent_2-dql-level_{}-time{}_num_episodes_{}.h5".format(
             arglist.level,
             arglist.max_timestep, arglist.num_training
         )
     else:
-        filename1 = "agent_1-dql-level_{}-time{}_num_episodes{}_ResourceScarcityVersion2.h5".format(
+        filename1 = "agent_1-dql-level_{}-time{}_num_episodes_{}_ResourceScarcityVersion2.h5".format(
             arglist.level,
             arglist.max_timestep, arglist.num_training
         )
-        filename2 = "agent_2-dql-level_{}-time{}_num_episodes{}_ResourceScarcityVersion2.h5".format(
+        filename2 = "agent_2-dql-level_{}-time{}_num_episodes_{}_ResourceScarcityVersion2.h5".format(
             arglist.level,
             arglist.max_timestep, arglist.num_training
         )

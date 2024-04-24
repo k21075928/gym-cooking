@@ -1,7 +1,8 @@
-# Overcooked! - Variant 3 - Resource Scarcity
+# Overcooked! - Variant 5 - Resource Scarcity
 
 This code is based on and forked from the  "Too many cooks: Bayesian inference for coordinating multi-agent collaboration", Winner of the CogSci 2020 Computational Modeling Prize in High Cognition, and a NeurIPS 2020 CoopAI Workshop Best Paper. from https://github.com/rosewang2008/gym-cooking
 
+This implements a continous working environment agents to continuously deliver recipes.
 
 Contents:
 - [Introduction](#introduction)
