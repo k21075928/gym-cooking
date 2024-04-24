@@ -13,7 +13,8 @@ import argparse
 from collections import namedtuple
 from DQL.dqlagent import RealDQLAgent
 import gym
-
+import csv
+import os
 
 def parse_arguments():
     parser = argparse.ArgumentParser("Overcooked 2 argument parser")
@@ -71,6 +72,8 @@ def parse_arguments():
     parser.add_argument("--num_training", type=int, default=5000, help="Number of training episodes")
     parser.add_argument("--max_timestep", type=int, default=60, help="Maximum number of timesteps per episode")
     parser.add_argument("--unlimited", action="store_true", default=False, help="unbounded training episodes") 
+
+    parser.add_argument("--record_data", action="store_true", default=False, help="Record Data") 
     return parser.parse_args()
 
 
@@ -122,36 +125,42 @@ def main_loop(arglist):
     print("Initializing environment and agents.")
     env = gym.envs.make("gym_cooking:overcookedEnv-v0", arglist=arglist)
     obs = env.reset()
-
+    csv_filename = create_csv_filename(arglist)
+    accumulative_reward = 0
     if arglist.rs1 or arglist.rs2:
         bag = Bag(arglist=arglist, filename=env.filename)
         bag.set_recipe(recipe_subtasks=env.all_subtasks)
         while env.alive():  # Keep running until the environment is done
             real_agents = initialize_agents(arglist=arglist)
             env.isdone=False
-            while not env.isdone and env.alive():
-                action_dict = {}
-                for agent in real_agents:
-                    action = agent.select_action(obs=obs)
-                    action_dict[agent.name] = action
-                obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
-
-                # Agents
-                for agent in real_agents:
-                    agent.refresh_subtasks(world=env.world)
-                    agent.all_done()
-                bag.add_status(cur_time=info['t'], real_agents=real_agents)
+            with open(csv_filename, 'a', newline='') as file:
+                writer = csv.writer(file)
+                while not env.isdone and env.alive():
+                    action_dict = {}
+                    for agent in real_agents:
+                        action = agent.select_action(obs=obs)
+                        action_dict[agent.name] = action
+                    obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
+                    accumulative_reward += reward
+                    writer.writerow([env.t, accumulative_reward])  # Write to the CSV file
+                    
+                    # Agents
+                    for agent in real_agents:
+                        agent.refresh_subtasks(world=env.world)
+                        agent.all_done()
+                    bag.add_status(cur_time=info['t'], real_agents=real_agents)
+                    
 
                 # Saving info
-                
-        bag.get_delivered(env.delivered)
-        if arglist.rs2:
-            bag.get_score(env.game.score)
+                    
+            bag.get_delivered(env.delivered)
+            if arglist.rs2:
+                bag.get_score(env.game.score)
 
-        # Saving final information before saving pkl file
-        bag.set_collisions(collisions=env.collisions)
-        bag.set_termination(termination_info=env.termination_info,
-                successful=env.successful)
+            # Saving final information before saving pkl file
+            bag.set_collisions(collisions=env.collisions)
+            bag.set_termination(termination_info=env.termination_info,
+                    successful=env.successful)
     else:
 
         # game = GameVisualize(env)
@@ -160,33 +169,68 @@ def main_loop(arglist):
         bag = Bag(arglist=arglist, filename=env.filename)
         bag.set_recipe(recipe_subtasks=env.all_subtasks)
         delivered=[]
-        while not env.done() or not env.isdone:
-            action_dict = {}
+        with open(csv_filename, 'a', newline='') as file:
+            writer = csv.writer(file)
+            while not env.done() or not env.isdone:
+                action_dict = {}
 
-            for agent in real_agents:
-                action = agent.select_action(obs=obs)
-                action_dict[agent.name] = action
+                for agent in real_agents:
+                    action = agent.select_action(obs=obs)
+                    action_dict[agent.name] = action
 
-            obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
-            print("info", info)
-            #env.get_reward(real_agents=real_agents)
+                obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
+                print("info", info)
+                #env.get_reward(real_agents=real_agents)
 
-            # Agents
-            for agent in real_agents:
-                agent.refresh_subtasks(world=env.world)
-                agent.all_done()
+                # Agents
+                for agent in real_agents:
+                    agent.refresh_subtasks(world=env.world)
+                    agent.all_done()
 
-            # Saving info
-            bag.add_status(cur_time=info['t'], real_agents=real_agents)
-        bag.set_collisions(collisions=env.collisions)
-        bag.set_termination(termination_info=env.termination_info,
-        successful=env.successful)
+                # Saving info
+                bag.add_status(cur_time=info['t'], real_agents=real_agents)
+                writer.writerow([env.t, reward])
+            bag.set_collisions(collisions=env.collisions)
+            bag.set_termination(termination_info=env.termination_info,
+            successful=env.successful)
+
+
+def create_csv_filename(arglist):
+    csv_filename = f"rewards_level{arglist.level}_model1{arglist.model1}"
+    csv_filename = "{}_agents{}_seed{}".format(arglist.level,
+            arglist.num_agents, arglist.seed)
+    csv_filename = "Results/{}".format(csv_filename)
+    directory = os.path.dirname(csv_filename)
+    os.makedirs(directory, exist_ok=True)
+    model = ""
+    if arglist.model1 is not None:
+        model += "_model1-{}".format(arglist.model1)
+    if arglist.model2 is not None:
+        model += "_model2-{}".format(arglist.model2)
+    if arglist.model3 is not None:
+        model += "_model3-{}".format(arglist.model3)
+    if arglist.model4 is not None:
+        model += "_model4-{}".format(arglist.model4)
+    csv_filename += model
+    if arglist.rs1:
+        csv_filename+="_resourceScarcityVersion1"
+    if arglist.rs2:
+        csv_filename+="_resourceScarcityVersion2"
+    if arglist.dql:
+        csv_filename+="_DQLVersion1"
+        csv_filename += "_Training_{}".format(arglist.num_training)
+    csv_filename += ".csv"
+    with open(csv_filename, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Time", model])
+    return csv_filename
 
 
 def dqlMainLoop(arglist):
     print("Initializing environment and agents.")
     env = gym.envs.make("gym_cooking:DQLovercookedEnv-v0", arglist=arglist)
     env.reset()
+    csv_filename = create_csv_filename(arglist)
     if not arglist.rs2:
         filename1 = "agent_1-dql-level_{}-time{}.h5".format(
             arglist.level,
@@ -211,6 +255,8 @@ def dqlMainLoop(arglist):
     dql_agents = initialize_agents(arglist, state_size, model_file)
     max_score = float("-inf")
     max_score_timestep = float("inf")
+
+
     for episode in range(arglist.num_training):
         print("===============================")
         print("[Deep Q-Learning] @ EPISODE {}".format(episode))
@@ -218,12 +264,14 @@ def dqlMainLoop(arglist):
         state = np.array(env.reset()).ravel()
         action_history = {agent.name: [] for agent in dql_agents}
         max_score, max_score_timestep = run_episode(env, dql_agents, state, action_history, max_score, max_score_timestep, episode, arglist.rs2)
+    
     for agent in dql_agents:
         agent.load_model_trained()
         state = np.array(env.reset()).ravel()
         action_histories = {agent.name: agent.nnmodel.action_history for agent in dql_agents}
-        reward_total = run_prediction(env, dql_agents, action_histories, arglist.rs2)
+        reward_total = run_prediction(env, dql_agents, action_histories,csv_filename, arglist.rs2)
         print("Total Reward:{}".format(reward_total))
+
             
     
     if not arglist.rs2:
@@ -233,21 +281,26 @@ def dqlMainLoop(arglist):
         print("Highest score: ", reward_total)
         print("Average Time-step", env.t)
 
-def run_prediction(env, agents, action_histories, rs2=False):
+def run_prediction(env, agents, action_histories,csv_filename, rs2=False):
     reward_total = 0
     done = False
     env.predict = True
     env.reset()
-    while (rs2 and env.t < arglist.max_timestep) or (not rs2 and not done and env.t < arglist.max_timestep):
-        action_dict = {agent.name: action_histories[agent.name][env.t] for agent in agents}
-        next_state, reward, done, info = env.step(action_dict)
-        reward = reward or 0
-        if done:
-            reward += 50
-        next_state = np.array(next_state).ravel()
-        reward_total += reward
+    accumulative_reward = 0
+    with open(csv_filename, 'a', newline='') as file:
+        writer = csv.writer(file)
+        while (rs2 and env.t < arglist.max_timestep) or (not rs2 and not done and env.t < arglist.max_timestep):
+            action_dict = {agent.name: action_histories[agent.name][env.t] for agent in agents}
+            next_state, reward, done, info = env.step(action_dict)
+            reward = reward or 0
+            if done:
+                reward += 50
+            next_state = np.array(next_state).ravel()
+            reward_total += reward
+            accumulative_reward += reward
+            writer.writerow([env.t, accumulative_reward])
 
-    return reward_total   
+        return reward_total   
 def run_episode(env, agents, state, action_history, max_score, max_score_timestep, episode, rs2=False):
     reward_total = 0
     done = False

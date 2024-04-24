@@ -221,7 +221,8 @@ class Game:
             image = pygame.transform.scale(get_image(image_path), size)
             self.screen.blit(image, location)
         except pygame.error:
-            print(f"Image {image_path} not found, skipping.")
+            return
+
 
 
     def draw_agent(self, agent):

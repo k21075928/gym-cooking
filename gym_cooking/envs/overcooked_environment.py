@@ -321,7 +321,7 @@ class OvercookedEnvironment(gym.Env):
         # Execute.
         self.execute_navigation()
         
-        print("reward happening",self._define_goal_state())
+        reward=self._define_goal_state()
         # Visualize.
         self.display()
         self.print_agents()
@@ -338,9 +338,10 @@ class OvercookedEnvironment(gym.Env):
                 "image_obs": image_obs,
                 "done": self.isdone, "termination_info": self.termination_info}
         if self.rs1 or self.rs2:
-            return new_obs, self.reward, self.isdone, info, self.rsflag
+            return new_obs, reward, self.isdone, info, self.rsflag
         else:
-            return new_obs, self.reward, self.isdone, info, False
+            return new_obs, reward, self.isdone, info, False
+        
     def _define_goal_state(self):
         """Defining a goal state (termination condition on state) for subtask."""
         subtasks = self.run_recipes()
