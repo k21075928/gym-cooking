@@ -141,8 +141,10 @@ def main_loop(arglist):
                         action = agent.select_action(obs=obs)
                         action_dict[agent.name] = action
                     obs, reward, done, info, rsflag = env.step(action_dict=action_dict)
-                    accumulative_reward += reward
-                    writer.writerow([env.t, accumulative_reward])  # Write to the CSV file
+                    
+                    if arglist.record_date:
+                        accumulative_reward += reward
+                        writer.writerow([env.t, accumulative_reward])
                     
                     # Agents
                     for agent in real_agents:
@@ -189,7 +191,11 @@ def main_loop(arglist):
 
                 # Saving info
                 bag.add_status(cur_time=info['t'], real_agents=real_agents)
-                writer.writerow([env.t, reward])
+
+
+                if arglist.record_date:
+                    accumulative_reward += reward
+                    writer.writerow([env.t, accumulative_reward])
             bag.set_collisions(collisions=env.collisions)
             bag.set_termination(termination_info=env.termination_info,
             successful=env.successful)
@@ -220,9 +226,10 @@ def create_csv_filename(arglist):
         csv_filename+="_DQLVersion1"
         csv_filename += "_Training_{}".format(arglist.num_training)
     csv_filename += ".csv"
-    with open(csv_filename, 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["Time", model])
+    if arglist.record_data:
+        with open(csv_filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Time", model])
     return csv_filename
 
 
@@ -297,8 +304,9 @@ def run_prediction(env, agents, action_histories,csv_filename, rs2=False):
                 reward += 50
             next_state = np.array(next_state).ravel()
             reward_total += reward
-            accumulative_reward += reward
-            writer.writerow([env.t, accumulative_reward])
+            if arglist.record_data:
+                accumulative_reward += reward
+                writer.writerow([env.t, accumulative_reward])
 
         return reward_total   
 def run_episode(env, agents, state, action_history, max_score, max_score_timestep, episode, rs2=False):
