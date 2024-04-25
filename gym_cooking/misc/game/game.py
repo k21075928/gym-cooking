@@ -41,13 +41,13 @@ class Game:
         self.UpdateDispenserCounter= 0
         self.item_delivery_timer = {}
         self.dqlmap=False
-        if self.rs2:
+        if self.rs2 and arglist:
             if arglist.time:
                 self.timer=arglist.time
             else:
                 self.timer=60
             self.score=0
-        if self.rs1:
+        if self.rs1 and arglist:
             if arglist.health:
                 self.health=arglist.health
             else:

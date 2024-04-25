@@ -15,12 +15,18 @@ from datetime import datetime
 
 
 class GamePlay(Game):
-    def __init__(self, filename, world, sim_agents,rs1,rs2):
-        Game.__init__(self, world, sim_agents,rs1,rs2, play=True)
+    def __init__(self, filename, world, sim_agents,rs1,rs2, arglist=None):
+        Game.__init__(self, world, sim_agents,rs1,rs2, play=True, arglist=arglist)
         self.filename = filename 
         self.steps = 0
         self.save_dir = 'misc/game/screenshots'
-        self.item_refresh_rate = {"Plate": 10, "Lettuce": 15, "Tomato": 10, "Onion": 25, "Chicken": 30}
+        self.item_refresh_rate = {
+                    "Plate": arglist.plate_refresh_time,
+                    "Lettuce": arglist.lettuce_refresh_time,
+                    "Tomato": arglist.tomato_refresh_time,
+                    "Onion": arglist.onion_refresh_time,
+                    "Chicken": arglist.chicken_refresh_time
+                    }
         self.item_delivery_timer = {item: rate for item, rate in self.item_refresh_rate.items()}
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
@@ -91,6 +97,10 @@ class GamePlay(Game):
                 self.steps+=1 
                 self.decrease_health()
                 self.refreshAll()
+                for item in self.item_delivery_timer:
+                    self.item_delivery_timer[item] -= 1
+                    if self.item_delivery_timer[item] == 0:
+                        self.item_delivery_timer[item] = self.item_refresh_rate[item]
             # Save current image
             if event.key == pygame.K_RETURN:
                 image_name = '{}_{}.png'.format(self.filename, datetime.now().strftime('%m-%d-%y_%H-%M-%S'))

@@ -570,7 +570,6 @@ class OvercookedEnvironment(gym.Env):
         if not recipes:
             self.refreshRecipe = True
 
-        print("find best",recipes)
         return recipes
     
     def run_recipes(self):

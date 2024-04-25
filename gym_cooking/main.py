@@ -287,7 +287,7 @@ def dqlMainLoop(arglist):
     else:
         print("Highest score: ", reward_total)
         print("Average Time-step", env.t)
-    print("Delivered:", env.delivered)
+    # print("Delivered:", env.delivered)
 
 def run_prediction(env, agents, action_histories,csv_filename, rs2=False):
     reward_total = 0
@@ -351,7 +351,7 @@ if __name__ == '__main__':
     if arglist.play:
         env = gym.envs.make("gym_cooking:overcookedEnv-v0", arglist=arglist)
         env.reset()
-        game = GamePlay(env.filename, env.world, env.sim_agents,arglist.rs1,arglist.rs2)
+        game = GamePlay(env.filename, env.world, env.sim_agents,arglist.rs1,arglist.rs2, arglist=arglist)
         game.on_execute()
     elif arglist.dql:
         model_types = [arglist.model1, arglist.model2, arglist.model3, arglist.model4]

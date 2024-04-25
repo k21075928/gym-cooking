@@ -43,6 +43,7 @@ class DQLOvercookedEnvironment(OvercookedEnvironment):
             "Onion": self.arglist.onion_refresh_time,
             "Chicken": self.arglist.chicken_refresh_time
             }
+        self.reward =0
 
     def execute_navigation(self):
         for agent in self.sim_agents:
@@ -51,11 +52,13 @@ class DQLOvercookedEnvironment(OvercookedEnvironment):
             self.agent_actions[agent.name] = agent.action
             if objD is not None:
                     self.isdelivered(objD)
+                    self.reward +=50
                     self.isdone = True
                     objD = None
+
     def reset(self):
         self.world = DQLWorld(arglist=self.arglist)
-        
+        self.reward =0
         self.Initalworld = self.world
         self.recipes = []
         self.sim_agents = []
@@ -73,7 +76,6 @@ class DQLOvercookedEnvironment(OvercookedEnvironment):
         self.load_level(
                 level=self.arglist.level,
                 num_agents=self.arglist.num_agents)
-        print(self.x, self.y)
         self.repOBS = np.zeros((self.x, self.y, 4))
 
         self.world.make_loc_to_gridsquare()
@@ -120,6 +122,7 @@ class DQLOvercookedEnvironment(OvercookedEnvironment):
     
 
     def step(self, action_dict):
+        self.reward=0
         if 0 and self.t % 5 == 0:
             print("===============================")
             print("[Deep Q-Learning] @ STEP {}".format(self.t))
@@ -153,15 +156,14 @@ class DQLOvercookedEnvironment(OvercookedEnvironment):
         if  (self.arglist.rs1 or self.arglist.rs2) and not self.arglist.level == "ResourceScarcityDQL":
             self.refreshfromtimer()
 
-        # States, rewards, done
+        # States, self.rewards, done
         self.recipes = self.find_best_recipe()
         self.all_subtasks = self.run_recipes()
         self.subtasks_left = self.all_subtasks
         done = self.done()
-        reward=0
-        if done:
-            reward+=50
-        reward += self._define_goal_state()
+        
+
+        self.reward += self._define_goal_state()
 
         self.update_display()
 
@@ -175,7 +177,7 @@ class DQLOvercookedEnvironment(OvercookedEnvironment):
             "done": done, "termination_info": self.termination_info
         }
 
-        return next_state, reward, done, info
+        return next_state, self.reward, done, info
     def refreshAll(self):
         for item in self.item_refresh_rate.keys():
             self.refresh(item[0].lower())
