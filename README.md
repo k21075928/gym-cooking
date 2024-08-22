@@ -1,5 +1,9 @@
 # Overcooked! - Variant 5 - Resource Scarcity
 
+Abstract
+Overcooked is a game that combines decision-making and collaborative teamwork in a time-constrained environment incorporated with the use of Multi-Agent Reinforcement Learning can create an opportunity for exploring the dynamics of cooperation, decision-making, and emergent strategies.
+This project aims to create and implement resource-scarce environments and see how well agent model types perform in certain combinations. The environment will force agents to work continuously to survive and extend their life spans corresponding to the complexity of the dish delivered. This project also explores the use of Deep Q-learning agents and compares their performance against other agent models. Furthermore, the relationship between different agent model types, tests whether the combination of different agent models works best together in resource-scarce environment.
+
 This code is based on and forked from the  "Too many cooks: Bayesian inference for coordinating multi-agent collaboration", Winner of the CogSci 2020 Computational Modeling Prize in High Cognition, and a NeurIPS 2020 CoopAI Workshop Best Paper. from https://github.com/rosewang2008/gym-cooking.
 
 This implements a continous working environment agents to continuously deliver recipes.
